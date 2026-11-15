@@ -155,10 +155,50 @@ jobs:
           )
           s = s.replace(
               "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens)",
-              "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens ${CMAKE_CURRENT_LIST_DIR}/.. ${CMAKE_CURRENT_LIST_DIR}/../include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kode_sys/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdefs/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/klog/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdrv/apps/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kaos/core/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kqp/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/qpc/qpc/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/qpc/port)"
+              "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens ${CMAKE_CURRENT_LIST_DIR}/.. ${CMAKE_CURRENT_LIST_DIR}/../include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kode_sys/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdefs/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/klog/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdrv/apps/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kaos/core/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kqp/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/qpc/qpc/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/qpc/port ${CMAKE_CURRENT_LIST_DIR}/../../../../kds-freertos-headers)"
           )
           p.write_text(s)
           PY
+          # KGUI screen headers include KodeOS QP/C declarations. The Windows
+          # visual simulator does not run QP/FreeRTOS; provide type-only
+          # FreeRTOS declarations so those headers parse without pretending
+          # that an RTOS is running.
+          mkdir -p kds-freertos-headers/freertos
+          cat > kds-freertos-headers/freertos/FreeRTOS.h <<'EOF'
+          #pragma once
+          #include <stdint.h>
+          #include <stddef.h>
+          typedef void * QueueHandle_t;
+          typedef void * TaskHandle_t;
+          typedef int BaseType_t;
+          typedef unsigned UBaseType_t;
+          typedef uint32_t TickType_t;
+          typedef uint32_t StackType_t;
+          typedef struct { unsigned char opaque[128]; } StaticQueue_t;
+          typedef struct { unsigned char opaque[256]; } StaticTask_t;
+          typedef struct { unsigned opaque[8]; } portMUX_TYPE;
+          #define configUSE_IDLE_HOOK 0
+          #define configUSE_TICK_HOOK 0
+          #define configCHECK_FOR_STACK_OVERFLOW 0
+          #define configSUPPORT_STATIC_ALLOCATION 0
+          #define tskIDLE_PRIORITY 0
+          EOF
+          cat > kds-freertos-headers/freertos/task.h <<'EOF'
+          #pragma once
+          #include "FreeRTOS.h"
+          #define taskDISABLE_INTERRUPTS() ((void)0)
+          #define taskENABLE_INTERRUPTS() ((void)0)
+          #define taskENTER_CRITICAL(mux) ((void)(mux))
+          #define taskEXIT_CRITICAL(mux) ((void)(mux))
+          #define taskENTER_CRITICAL_FROM_ISR() (0U)
+          #define taskEXIT_CRITICAL_FROM_ISR(x) ((void)(x))
+          static inline void vTaskSuspendAll(void) {}
+          static inline BaseType_t xTaskResumeAll(void) { return 1; }
+          EOF
+          cat > kds-freertos-headers/freertos/queue.h <<'EOF'
+          #pragma once
+          #include "FreeRTOS.h"
+          EOF
           # MinGW's Windows CRT does not expose POSIX setenv(); provide a tiny
           # compatibility shim without changing the official SDK source.
           cat > kds-win-compat.h <<'EOF'

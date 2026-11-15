@@ -164,9 +164,15 @@ jobs:
           )
           s = s.replace(
               "${CMAKE_CURRENT_LIST_DIR}/kgui_sim.c ${CMAKE_CURRENT_LIST_DIR}/../kgui_edge.c ${CMAKE_CURRENT_LIST_DIR}/../kgui_fluid.c ${KGUI_SCREENS}",
-              "${CMAKE_CURRENT_LIST_DIR}/kgui_sim.c ${CMAKE_CURRENT_LIST_DIR}/../kgui_edge.c ${CMAKE_CURRENT_LIST_DIR}/../kgui_fluid.c ${KGUI_ASSETS} ${KGUI_SCREENS} ${CMAKE_CURRENT_LIST_DIR}/../../../../../native/kgui_sim_hal.c"
+              "${CMAKE_CURRENT_LIST_DIR}/kgui_sim.c ${CMAKE_CURRENT_LIST_DIR}/../kgui_edge.c ${CMAKE_CURRENT_LIST_DIR}/../kgui_fluid.c ${KGUI_ASSETS} ${KGUI_SCREENS} ${CMAKE_CURRENT_LIST_DIR}/../../../../../native/kgui_sim_hal.c ${CMAKE_CURRENT_LIST_DIR}/../../../../../native/kds_storage.c"
           )
           p.write_text(s)
+          # Wire the host SD directory into the actual simulator startup.
+          main = Path("upstream/KodeOS/components/kui/sim/main.c")
+          ms = main.read_text()
+          ms = ms.replace('#include "keys.h"', '#include "keys.h"\\n#include "kds_storage.h"')
+          ms = ms.replace('    lv_init();', '    if (kds_storage_init() == 0) {\\n        fprintf(stderr, "Kds SD: %s\\\\n", kds_storage_root());\\n    } else {\\n        fprintf(stderr, "Kds SD unavailable; continuing without persistent storage.\\\\n");\\n    }\\n    lv_init();')
+          main.write_text(ms)
           PY
           # KGUI screen headers include KodeOS QP/C declarations. The Windows
           # visual simulator does not run QP/FreeRTOS; provide type-only

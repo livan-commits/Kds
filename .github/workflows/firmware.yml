@@ -157,6 +157,15 @@ jobs:
               "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens)",
               "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens ${CMAKE_CURRENT_LIST_DIR}/.. ${CMAKE_CURRENT_LIST_DIR}/../include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kode_sys/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdefs/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/klog/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdrv/apps/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdrv/motion/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdrv/nfc/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdrv/radio/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdrv/storage/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kaos/core/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kqp/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/khal/sync/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/qpc/qpc/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/qpc/port ${CMAKE_CURRENT_LIST_DIR}/../../../../../kds-freertos-headers)"
           )
+          # Include the real KGUI font and glyph translation units referenced by screens.
+          s = s.replace(
+              "file(GLOB KGUI_SCREENS",
+              "file(GLOB_RECURSE KGUI_ASSETS ${CMAKE_CURRENT_LIST_DIR}/../fonts/*.c ${CMAKE_CURRENT_LIST_DIR}/../glyphs/*.c)\\nfile(GLOB KGUI_SCREENS"
+          )
+          s = s.replace(
+              "${CMAKE_CURRENT_LIST_DIR}/kgui_sim.c ${KGUI_SCREENS}",
+              "${CMAKE_CURRENT_LIST_DIR}/kgui_sim.c ${KGUI_ASSETS} ${KGUI_SCREENS}"
+          )
           p.write_text(s)
           PY
           # KGUI screen headers include KodeOS QP/C declarations. The Windows

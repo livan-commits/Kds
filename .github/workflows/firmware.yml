@@ -259,8 +259,11 @@ jobs:
           # SDL's dummy video backend and its software renderer for snapshots.
           export SDL_VIDEODRIVER=dummy
           export SDL_RENDER_DRIVER=software
-          ./build-kgui/kgui_sim.exe face --snapshot kds-face.png --device --bezel
-          test -s kds-face.png
+          for screen in face launcher loading settings touch_test; do
+            echo "Smoke-test KGUI screen: $screen"
+            ./build-kgui/kgui_sim.exe "$screen" --snapshot "kds-$screen.png" --device --bezel
+            test -s "kds-$screen.png"
+          done
 
       - name: Package Windows KGUI simulator
         shell: msys2 {0}
@@ -269,7 +272,7 @@ jobs:
           mkdir -p kds-kgui-windows
           cp build-kgui/kgui_sim.exe kds-kgui-windows/
           cp /ucrt64/bin/SDL2.dll kds-kgui-windows/
-          cp kds-face.png kds-kgui-windows/
+          cp kds-*.png kds-kgui-windows/
           cp native/kds_storage.h native/kds_storage.c kds-kgui-windows/
           cat > kds-kgui-windows/Kds-Start.bat <<'EOF'
           @echo off

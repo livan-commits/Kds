@@ -236,6 +236,10 @@ jobs:
         shell: msys2 {0}
         run: |
           set -euo pipefail
+          # GitHub-hosted Windows runners have no interactive display. Use
+          # SDL's dummy video backend and its software renderer for snapshots.
+          export SDL_VIDEODRIVER=dummy
+          export SDL_RENDER_DRIVER=software
           ./build-kgui/kgui_sim.exe face --snapshot kds-face.png --device --bezel
           test -s kds-face.png
 

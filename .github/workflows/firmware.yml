@@ -170,8 +170,13 @@ jobs:
           # Wire the host SD directory into the actual simulator startup.
           main = Path("upstream/KodeOS/components/kui/sim/main.c")
           ms = main.read_text()
-          ms = ms.replace('#include "keys.h"', '#include "keys.h"\\n#include "kds_storage.h"')
-          ms = ms.replace('    lv_init();', '    if (kds_storage_init() == 0) {\\n        fprintf(stderr, "Kds SD: %s\\\\n", kds_storage_root());\\n    } else {\\n        fprintf(stderr, "Kds SD unavailable; continuing without persistent storage.\\\\n");\\n    }\\n    lv_init();')
+          ms = ms.replace('#include "keys.h"', '#include "keys.h"' + chr(10) + '#include "kds_storage.h"')
+          boot = '    if (kds_storage_init() == 0) {' + chr(10)
+          boot += '        fprintf(stderr, "Kds SD: %s' + chr(92) + 'n", kds_storage_root());' + chr(10)
+          boot += '    } else {' + chr(10)
+          boot += '        fprintf(stderr, "Kds SD unavailable; continuing without persistent storage.' + chr(92) + 'n");' + chr(10)
+          boot += '    }' + chr(10) + '    lv_init();'
+          ms = ms.replace('    lv_init();', boot)
           main.write_text(ms)
           PY
           # KGUI screen headers include KodeOS QP/C declarations. The Windows

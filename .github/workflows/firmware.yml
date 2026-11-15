@@ -70,6 +70,13 @@ jobs:
           test -s kodeos.bin
           test -s storage.bin
 
+      - name: Package complete upstream source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar --exclude-vcs -czf "$GITHUB_WORKSPACE/kodediy-upstream-source.tar.gz" -C upstream KodeOS
+          test -s "$GITHUB_WORKSPACE/kodediy-upstream-source.tar.gz"
+
       - name: Write reproducible source manifest
         shell: bash
         run: |
@@ -82,16 +89,18 @@ jobs:
             "esp_idf": "v6.1",
             "targets": ["esp32p4", "esp32c5"],
             "display": "410x502 RGB565",
+            "upstream_source_archive": "kodediy-upstream-source.tar.gz",
             "note": "Firmware build artifacts only; this does not claim that the complete Kode Dot peripheral set is emulated."
           }
           EOF
-          sha256sum p4-kodeos-flash.bin c5-flash.bin > SHA256SUMS
+          sha256sum p4-kodeos-flash.bin c5-flash.bin kodediy-upstream-source.tar.gz > SHA256SUMS
 
-      - name: Upload official firmware and source manifest
+      - name: Upload upstream source, firmware and manifest
         uses: actions/upload-artifact@v4
         with:
-          name: kds-official-firmware
+          name: kds-upstream-and-firmware
           path: |
+            kodediy-upstream-source.tar.gz
             p4-kodeos-flash.bin
             c5-flash.bin
             source-manifest.json

@@ -1,3 +1,6 @@
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200809L
+#endif
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "kds_storage.h"
 #include <stdio.h>

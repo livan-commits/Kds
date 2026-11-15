@@ -146,7 +146,37 @@ jobs:
         shell: msys2 {0}
         run: |
           set -euo pipefail
-          cmake -S upstream/KodeOS/components/kgui/sim -B build-kgui -G Ninja
+          # The upstream simulator's source list omits the KGUI edge module,
+          # although kgui_off.h includes its public header.
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("upstream/KodeOS/components/kgui/sim/CMakeLists.txt")
+          s = p.read_text()
+          s = s.replace(
+              "SOURCES ${CMAKE_CURRENT_LIST_DIR}/kgui_sim.c ${KGUI_SCREENS}",
+              "SOURCES ${CMAKE_CURRENT_LIST_DIR}/kgui_sim.c ${CMAKE_CURRENT_LIST_DIR}/../kgui_edge.c ${KGUI_SCREENS}"
+          )
+          s = s.replace(
+              "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens)",
+              "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens ${CMAKE_CURRENT_LIST_DIR}/..)"
+          )
+          p.write_text(s)
+          PY
+          # MinGW's Windows CRT does not expose POSIX setenv(); provide a tiny
+          # compatibility shim without changing the official SDK source.
+          cat > kds-win-compat.h <<'EOF'
+          #include <stdlib.h>
+          #ifdef _WIN32
+          static inline int kds_setenv(const char *name, const char *value, int overwrite)
+          {
+              if (!overwrite && getenv(name) != NULL) return 0;
+              return _putenv_s(name, value);
+          }
+          #define setenv kds_setenv
+          #endif
+          EOF
+          cmake -S upstream/KodeOS/components/kgui/sim -B build-kgui -G Ninja \
+            -DCMAKE_C_FLAGS="-include $GITHUB_WORKSPACE/kds-win-compat.h"
           cmake --build build-kgui --parallel
 
       - name: Smoke-test real KGUI screen rendering

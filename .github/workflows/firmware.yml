@@ -253,37 +253,44 @@ jobs:
           cp kds-face.png kds-kgui-windows/
           cat > kds-kgui-windows/Kds-Start.bat <<'EOF'
           @echo off
-          setlocal
           cd /d "%~dp0"
-          title Kds - Kode Dot
-          :menu
-          cls
-          echo ==========================================
-          echo             Kds - Kode Dot
-          echo       Simulateur natif KGUI officiel
-          echo ==========================================
-          echo.
-          echo  1. Visage / cadran
-          echo  2. Lanceur d'applications
-          echo  3. Ecran de chargement
-          echo  4. Parametres
-          echo  5. Test tactile
-          echo  6. Ouvrir directement le simulateur
-          echo  0. Quitter
-          echo.
-          choice /c 1234560 /n /m "Choisir un ecran : "
-          if errorlevel 7 goto end
-          if errorlevel 6 start "" "%~dp0kgui_sim.exe" face --device --bezel & goto end
-          if errorlevel 5 set "SCREEN=touch_test" & goto launch
-          if errorlevel 4 set "SCREEN=settings" & goto launch
-          if errorlevel 3 set "SCREEN=loading" & goto launch
-          if errorlevel 2 set "SCREEN=launcher" & goto launch
-          if errorlevel 1 set "SCREEN=face" & goto launch
-          :launch
-          start "" "%~dp0kgui_sim.exe" "%SCREEN%" --device --bezel
-          goto end
-          :end
-          endlocal
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Kds-Start.ps1"
+          EOF
+          cat > kds-kgui-windows/Kds-Start.ps1 <<'EOF'
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
+          $form = New-Object Windows.Forms.Form
+          $form.Text = "Kds - Kode Dot"
+          $form.StartPosition = "CenterScreen"
+          $form.Size = New-Object Drawing.Size(430,430)
+          $form.FormBorderStyle = "FixedDialog"
+          $form.MaximizeBox = $false
+          $form.BackColor = [Drawing.Color]::FromArgb(22,24,30)
+          $form.ForeColor = [Drawing.Color]::White
+          $header = New-Object Windows.Forms.Label
+          $header.Text = "Kds | Kode Dot - Simulateur natif KGUI"
+          $header.Font = New-Object Drawing.Font("Segoe UI",16,[Drawing.FontStyle]::Bold)
+          $header.TextAlign = "MiddleCenter"
+          $header.Location = New-Object Drawing.Point(20,15)
+          $header.Size = New-Object Drawing.Size(370,65)
+          $form.Controls.Add($header)
+          $items = @(@("Visage / cadran","face"),@("Lanceur d'applications","launcher"),@("Ecran de chargement","loading"),@("Parametres","settings"),@("Test tactile","touch_test"))
+          $y = 95
+          foreach ($item in $items) {
+            $button = New-Object Windows.Forms.Button
+            $button.Text = $item[0]
+            $button.Tag = $item[1]
+            $button.Location = New-Object Drawing.Point(55,$y)
+            $button.Size = New-Object Drawing.Size(300,42)
+            $button.FlatStyle = "Flat"
+            $button.BackColor = [Drawing.Color]::FromArgb(54,66,92)
+            $button.ForeColor = [Drawing.Color]::White
+            $button.Font = New-Object Drawing.Font("Segoe UI",10,[Drawing.FontStyle]::Bold)
+            $button.Add_Click({ $screen = [string]$this.Tag; Start-Process -FilePath (Join-Path $PSScriptRoot "kgui_sim.exe") -ArgumentList @($screen,"--device","--bezel") -WorkingDirectory $PSScriptRoot; $form.Close() })
+            $form.Controls.Add($button)
+            $y += 49
+          }
+          [void]$form.ShowDialog()
           EOF
           cat > kds-kgui-windows/README.txt <<'EOF'
           Kds - Kode Dot : previsualisation native Windows

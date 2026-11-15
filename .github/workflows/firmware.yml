@@ -107,3 +107,72 @@ jobs:
             SHA256SUMS
           if-no-files-found: error
           retention-days: 14
+
+  windows-kgui:
+    name: Build the real KodeOS KGUI on Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Kds
+        uses: actions/checkout@v4
+
+      - name: Checkout official KodeOS and SDK sources
+        uses: actions/checkout@v4
+        with:
+          repository: kodediy/KodeOS
+          ref: 9bcfdb71b763ee7b5c14106358643ea611fc97db
+          path: upstream/KodeOS
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Set up MSYS2 UCRT64 with SDL2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            git
+            make
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-SDL2
+
+      - name: Build official KGUI simulator for Windows
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          cmake -S upstream/KodeOS/components/kgui/sim -B build-kgui -G Ninja
+          cmake --build build-kgui --parallel
+
+      - name: Smoke-test real KGUI screen rendering
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          ./build-kgui/kgui_sim.exe face --snapshot kds-face.png --device --bezel
+          test -s kds-face.png
+          file kds-face.png
+
+      - name: Package Windows KGUI simulator
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          mkdir -p kds-kgui-windows
+          cp build-kgui/kgui_sim.exe kds-kgui-windows/
+          cp /ucrt64/bin/SDL2.dll kds-kgui-windows/
+          cp kds-face.png kds-kgui-windows/
+          cat > kds-kgui-windows/README.txt <<'EOF'
+          Kds — real KodeOS KGUI preview for Windows.
+          This executable builds the official KGUI screen sources with LVGL and SDL2.
+          It is a fast native UI simulator, not a full ESP32-P4 firmware emulator.
+          Run kgui_sim.exe face, launcher, loading, settings or touch_test.
+          EOF
+          7z a kds-kgui-windows.zip ./kds-kgui-windows/*
+
+      - name: Upload Windows KGUI preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: kds-kgui-windows-preview
+          path: kds-kgui-windows.zip
+          if-no-files-found: error
+          retention-days: 14

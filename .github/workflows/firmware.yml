@@ -168,7 +168,7 @@ jobs:
           )
           p.write_text(s)
           # Wire the host SD directory into the actual simulator startup.
-          main = Path("upstream/KodeOS/components/kui/sim/main.c")
+          main = Path("upstream/KodeOS/sdk/components/kui/sim/main.c")
           ms = main.read_text()
           ms = ms.replace('#include "keys.h"', '#include "keys.h"' + chr(10) + '#include "kds_storage.h"')
           boot = '    if (kds_storage_init() == 0) {' + chr(10)
@@ -240,7 +240,7 @@ jobs:
           #endif
           EOF
           cmake -S upstream/KodeOS/components/kgui/sim -B build-kgui -G Ninja \
-            -DCMAKE_C_FLAGS="-include $GITHUB_WORKSPACE/kds-win-compat.h"
+            -DCMAKE_C_FLAGS="-include $GITHUB_WORKSPACE/kds-win-compat.h -I$GITHUB_WORKSPACE/native"
           cmake --build build-kgui --parallel
 
       - name: Build and test persistent SD storage foundation

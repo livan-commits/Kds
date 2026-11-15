@@ -232,6 +232,14 @@ jobs:
             -DCMAKE_C_FLAGS="-include $GITHUB_WORKSPACE/kds-win-compat.h"
           cmake --build build-kgui --parallel
 
+      - name: Build and test persistent SD storage foundation
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          gcc -std=c11 -Wall -Wextra -Werror -I native native/kds_storage.c native/test_storage.c -o kds-storage-test.exe
+          ./kds-storage-test.exe
+          test -f "$APPDATA/Kds/SD/kds-storage-test.txt"
+
       - name: Smoke-test real KGUI screen rendering
         shell: msys2 {0}
         run: |
@@ -251,6 +259,7 @@ jobs:
           cp build-kgui/kgui_sim.exe kds-kgui-windows/
           cp /ucrt64/bin/SDL2.dll kds-kgui-windows/
           cp kds-face.png kds-kgui-windows/
+          cp native/kds_storage.h native/kds_storage.c kds-kgui-windows/
           cat > kds-kgui-windows/Kds-Start.bat <<'EOF'
           @echo off
           cd /d "%~dp0"

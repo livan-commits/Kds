@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: kds-main-build
+  cancel-in-progress: true
+
 jobs:
   firmware:
     name: Build official KodeOS P4 and C5 firmware

@@ -1,10 +1,12 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "kds_storage.h"
 #include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
 #include <direct.h>
+#include <sys/stat.h>
 #define KDS_MKDIR(p) _mkdir(p)
 #define KDS_SEP '\\'
 #else
@@ -19,11 +21,15 @@
 #endif
 static char root[PATH_MAX];
 static int ready;
-static int make_dir(const char *p) { int r=KDS_MKDIR(p); (void)r; 
+static int make_dir(const char *p) {
+ int r=KDS_MKDIR(p);
+ if (r==0) return 0;
 #ifdef _WIN32
- return 0;
+ struct _stat st;
+ return (_stat(p,&st)==0 && (st.st_mode & _S_IFDIR)) ? 0 : -1;
 #else
- return (r==0 || access(p,F_OK)==0) ? 0 : -1;
+ struct stat st;
+ return (stat(p,&st)==0 && S_ISDIR(st.st_mode)) ? 0 : -1;
 #endif
 }
 int kds_storage_init(void) {

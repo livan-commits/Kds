@@ -8,10 +8,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: kds-main-build
-  cancel-in-progress: true
-
 jobs:
   firmware:
     name: Build official KodeOS P4 and C5 firmware
@@ -159,7 +155,7 @@ jobs:
           )
           s = s.replace(
               "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens)",
-              "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens ${CMAKE_CURRENT_LIST_DIR}/.. ${CMAKE_CURRENT_LIST_DIR}/../include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kode_sys/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdefs/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/klog/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdrv/apps/include)"
+              "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens ${CMAKE_CURRENT_LIST_DIR}/.. ${CMAKE_CURRENT_LIST_DIR}/../include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kode_sys/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdefs/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/klog/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdrv/apps/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kaos/core/include)"
           )
           p.write_text(s)
           PY

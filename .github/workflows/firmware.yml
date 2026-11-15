@@ -259,6 +259,17 @@ jobs:
           cat > kds-kgui-windows/Kds-Start.ps1 <<'EOF'
           Add-Type -AssemblyName System.Windows.Forms
           Add-Type -AssemblyName System.Drawing
+          # Do not open another KGUI window while one is already running.
+          $running = Get-Process -Name "kgui_sim" -ErrorAction SilentlyContinue
+          if ($null -ne $running) {
+            [Windows.Forms.MessageBox]::Show(
+              "Le simulateur Kds est deja ouvert. Utilisez la fenetre existante.",
+              "Kds - deja lance",
+              [Windows.Forms.MessageBoxButtons]::OK,
+              [Windows.Forms.MessageBoxIcon]::Information
+            ) | Out-Null
+            exit 0
+          }
           $form = New-Object Windows.Forms.Form
           $form.Text = "Kds - Kode Dot"
           $form.StartPosition = "CenterScreen"
@@ -286,7 +297,20 @@ jobs:
             $button.BackColor = [Drawing.Color]::FromArgb(54,66,92)
             $button.ForeColor = [Drawing.Color]::White
             $button.Font = New-Object Drawing.Font("Segoe UI",10,[Drawing.FontStyle]::Bold)
-            $button.Add_Click({ $screen = [string]$this.Tag; Start-Process -FilePath (Join-Path $PSScriptRoot "kgui_sim.exe") -ArgumentList @($screen,"--device","--bezel") -WorkingDirectory $PSScriptRoot; $form.Close() })
+            $button.Add_Click({
+              $screen = [string]$this.Tag
+              $exe = Join-Path $PSScriptRoot "kgui_sim.exe"
+              if (-not (Test-Path -LiteralPath $exe)) {
+                [Windows.Forms.MessageBox]::Show("kgui_sim.exe est introuvable.", "Kds - erreur") | Out-Null
+                return
+              }
+              try {
+                Start-Process -FilePath $exe -ArgumentList @($screen,"--device","--bezel") -WorkingDirectory $PSScriptRoot -ErrorAction Stop | Out-Null
+                $form.Close()
+              } catch {
+                [Windows.Forms.MessageBox]::Show($_.Exception.Message, "Kds - lancement impossible") | Out-Null
+              }
+            })
             $form.Controls.Add($button)
             $y += 49
           }
@@ -303,6 +327,9 @@ jobs:
             Entree : bouton TOP (valider)
             Echap : bouton BOT (retour)
             Souris : toucher l'ecran et appuyer sur les boutons du boitier
+          
+          Un seul processus KGUI est autorise a la fois. Relancez Kds-Start
+          apres avoir ferme la fenetre du simulateur pour choisir un autre ecran.
           
           Ecrans fournis : face, launcher, loading, settings, touch_test.
           L'interface est le vrai KGUI KodeOS compile avec LVGL et SDL2.

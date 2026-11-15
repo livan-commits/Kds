@@ -6,6 +6,8 @@ int main(void) {
  char path[4096], buf[64]={0};
  assert(kds_storage_init()==0);
  assert(kds_storage_root()!=NULL);
+ assert(getenv("KDS_SD_ROOT")!=NULL);
+ assert(strcmp(getenv("KDS_SD_ROOT"),kds_storage_root())==0);
  assert(kds_storage_path("apps/test.txt",path,sizeof path)==0);
  assert(kds_storage_path("../escape",path,sizeof path)!=0);
  assert(kds_storage_path("/absolute",path,sizeof path)!=0);

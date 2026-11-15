@@ -44,6 +44,11 @@ int kds_storage_init(void) {
  if(make_dir(parent)!=0) return -1;
  if(snprintf(root,sizeof root,"%s%cSD",parent,KDS_SEP)>=(int)sizeof root) return -1;
  if(make_dir(root)!=0) return -1;
+#ifdef _WIN32
+ if (_putenv_s("KDS_SD_ROOT",root)!=0) return -1;
+#else
+ if (setenv("KDS_SD_ROOT",root,1)!=0) return -1;
+#endif
  ready=1; return 0;
 }
 const char *kds_storage_root(void) { return ready ? root : NULL; }

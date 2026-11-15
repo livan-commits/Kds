@@ -141,6 +141,7 @@ jobs:
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-pkgconf
             mingw-w64-ucrt-x86_64-SDL2
+            mingw-w64-ucrt-x86_64-python
 
       - name: Build official KGUI simulator for Windows
         shell: msys2 {0}

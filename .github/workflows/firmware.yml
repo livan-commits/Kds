@@ -1,0 +1,100 @@
+name: Kds — firmware amont et validation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  firmware:
+    name: Build official KodeOS P4 and C5 firmware
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Kds
+        uses: actions/checkout@v4
+
+      - name: Checkout official KodeOS and all upstream submodules
+        uses: actions/checkout@v4
+        with:
+          repository: kodediy/KodeOS
+          ref: 9bcfdb71b763ee7b5c14106358643ea611fc97db
+          path: upstream/KodeOS
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Verify upstream source pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C upstream/KodeOS rev-parse HEAD)" = "9bcfdb71b763ee7b5c14106358643ea611fc97db"
+          test "$(git -C upstream/KodeOS/sdk rev-parse HEAD)" = "1841cc8c13d4b2e3e4d7288b40cdac5de207a133"
+          git -C upstream/KodeOS submodule status --recursive
+          echo "KodeOS and SDK source pins verified."
+
+      - name: Build official ESP32-C5 firmware
+        uses: espressif/esp-idf-ci-action@e6f5c74232b1ccd4c97ed641f1e48553853f1fd5
+        with:
+          path: upstream/KodeOS
+          esp_idf_version: v6.1
+          target: esp32c5
+          command: bash tools/build_c5.sh
+
+      - name: Merge C5 flash image
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/esptool-tools
+          /tmp/esptool-tools/bin/pip install --disable-pip-version-check esptool
+          cd upstream/KodeOS/build_c5
+          /tmp/esptool-tools/bin/python -m esptool --chip esp32c5 merge-bin -o "$GITHUB_WORKSPACE/c5-flash.bin" -f raw @flash_args
+          test -s "$GITHUB_WORKSPACE/c5-flash.bin"
+
+      - name: Build official ESP32-P4 KodeOS firmware and storage image
+        uses: espressif/esp-idf-ci-action@e6f5c74232b1ccd4c97ed641f1e48553853f1fd5
+        with:
+          path: upstream/KodeOS
+          esp_idf_version: v6.1
+          target: esp32p4
+          command: idf.py build
+
+      - name: Merge P4 flash image with storage partition
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd upstream/KodeOS/build
+          python -m esptool --chip esp32p4 merge-bin -o "$GITHUB_WORKSPACE/p4-kodeos-flash.bin" -f raw @flash_args 0x1800000 storage.bin
+          test -s "$GITHUB_WORKSPACE/p4-kodeos-flash.bin"
+          test -s kodeos.bin
+          test -s storage.bin
+
+      - name: Write reproducible source manifest
+        shell: bash
+        run: |
+          cat > source-manifest.json <<'EOF'
+          {
+            "kodeos_repository": "https://github.com/kodediy/KodeOS",
+            "kodeos_commit": "9bcfdb71b763ee7b5c14106358643ea611fc97db",
+            "sdk_repository": "https://github.com/kodediy/kode-sdk",
+            "sdk_commit": "1841cc8c13d4b2e3e4d7288b40cdac5de207a133",
+            "esp_idf": "v6.1",
+            "targets": ["esp32p4", "esp32c5"],
+            "display": "410x502 RGB565",
+            "note": "Firmware build artifacts only; this does not claim that the complete Kode Dot peripheral set is emulated."
+          }
+          EOF
+          sha256sum p4-kodeos-flash.bin c5-flash.bin > SHA256SUMS
+
+      - name: Upload official firmware and source manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: kds-official-firmware
+          path: |
+            p4-kodeos-flash.bin
+            c5-flash.bin
+            source-manifest.json
+            SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14

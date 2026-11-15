@@ -69,7 +69,7 @@ jobs:
         run: |
           set -euo pipefail
           cd upstream/KodeOS/build
-          python -m esptool --chip esp32p4 merge-bin -o "$GITHUB_WORKSPACE/p4-kodeos-flash.bin" -f raw @flash_args 0x1800000 storage.bin
+          /tmp/esptool-tools/bin/python -m esptool --chip esp32p4 merge-bin -o "$GITHUB_WORKSPACE/p4-kodeos-flash.bin" -f raw @flash_args 0x1800000 storage.bin
           test -s "$GITHUB_WORKSPACE/p4-kodeos-flash.bin"
           test -s kodeos.bin
           test -s storage.bin
@@ -155,11 +155,11 @@ jobs:
           s = p.read_text()
           s = s.replace(
               "SOURCES ${CMAKE_CURRENT_LIST_DIR}/kgui_sim.c ${KGUI_SCREENS}",
-              "SOURCES ${CMAKE_CURRENT_LIST_DIR}/kgui_sim.c ${CMAKE_CURRENT_LIST_DIR}/../kgui_edge.c ${KGUI_SCREENS}"
+              "SOURCES ${CMAKE_CURRENT_LIST_DIR}/kgui_sim.c ${CMAKE_CURRENT_LIST_DIR}/../kgui_edge.c ${CMAKE_CURRENT_LIST_DIR}/../kgui_fluid.c ${KGUI_SCREENS}"
           )
           s = s.replace(
               "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens)",
-              "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens ${CMAKE_CURRENT_LIST_DIR}/..)"
+              "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens ${CMAKE_CURRENT_LIST_DIR}/.. ${CMAKE_CURRENT_LIST_DIR}/../include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kode_sys/include)"
           )
           p.write_text(s)
           PY

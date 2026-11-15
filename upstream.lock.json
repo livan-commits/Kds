@@ -1,0 +1,18 @@
+{
+  "kodeos": {
+    "repository": "https://github.com/kodediy/KodeOS.git",
+    "ref": "develop",
+    "commit": "9bcfdb71b763ee7b5c14106358643ea611fc97db",
+    "license": "GPL-3.0"
+  },
+  "sdk": {
+    "repository": "https://github.com/kodediy/kode-sdk",
+    "resolution": "Use the exact gitlink recorded by the pinned KodeOS submodule; CI must verify it."
+  },
+  "display": {
+    "width": 410,
+    "height": 502,
+    "format": "RGB565"
+  },
+  "chips": ["ESP32-P4", "ESP32-C5"]
+}

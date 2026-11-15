@@ -151,7 +151,6 @@ jobs:
           set -euo pipefail
           ./build-kgui/kgui_sim.exe face --snapshot kds-face.png --device --bezel
           test -s kds-face.png
-          file kds-face.png
 
       - name: Package Windows KGUI simulator
         shell: msys2 {0}
@@ -167,12 +166,11 @@ jobs:
           It is a fast native UI simulator, not a full ESP32-P4 firmware emulator.
           Run kgui_sim.exe face, launcher, loading, settings or touch_test.
           EOF
-          7z a kds-kgui-windows.zip ./kds-kgui-windows/*
 
       - name: Upload Windows KGUI preview
         uses: actions/upload-artifact@v4
         with:
           name: kds-kgui-windows-preview
-          path: kds-kgui-windows.zip
+          path: kds-kgui-windows/
           if-no-files-found: error
           retention-days: 14

@@ -159,7 +159,7 @@ jobs:
           )
           s = s.replace(
               "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens)",
-              "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens ${CMAKE_CURRENT_LIST_DIR}/.. ${CMAKE_CURRENT_LIST_DIR}/../include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kode_sys/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdefs/include)"
+              "INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../screens ${CMAKE_CURRENT_LIST_DIR}/.. ${CMAKE_CURRENT_LIST_DIR}/../include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kode_sys/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/kdefs/include ${CMAKE_CURRENT_LIST_DIR}/../../../sdk/components/klog/include)"
           )
           p.write_text(s)
           PY

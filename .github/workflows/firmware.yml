@@ -251,13 +251,61 @@ jobs:
           cp build-kgui/kgui_sim.exe kds-kgui-windows/
           cp /ucrt64/bin/SDL2.dll kds-kgui-windows/
           cp kds-face.png kds-kgui-windows/
-          cat > kds-kgui-windows/README.txt <<'EOF'
-          Kds — real KodeOS KGUI preview for Windows.
-          This executable builds the official KGUI screen sources with LVGL and SDL2.
-          It is a fast native UI simulator, not a full ESP32-P4 firmware emulator.
-          Run kgui_sim.exe face, launcher, loading, settings or touch_test.
+          cat > kds-kgui-windows/Kds-Start.bat <<'EOF'
+          @echo off
+          setlocal
+          cd /d "%~dp0"
+          title Kds - Kode Dot
+          :menu
+          cls
+          echo ==========================================
+          echo             Kds - Kode Dot
+          echo       Simulateur natif KGUI officiel
+          echo ==========================================
+          echo.
+          echo  1. Visage / cadran
+          echo  2. Lanceur d'applications
+          echo  3. Ecran de chargement
+          echo  4. Parametres
+          echo  5. Test tactile
+          echo  6. Ouvrir directement le simulateur
+          echo  0. Quitter
+          echo.
+          choice /c 1234560 /n /m "Choisir un ecran : "
+          if errorlevel 7 goto end
+          if errorlevel 6 start "" "%~dp0kgui_sim.exe" face --device --bezel & goto end
+          if errorlevel 5 set "SCREEN=touch_test" & goto launch
+          if errorlevel 4 set "SCREEN=settings" & goto launch
+          if errorlevel 3 set "SCREEN=loading" & goto launch
+          if errorlevel 2 set "SCREEN=launcher" & goto launch
+          if errorlevel 1 set "SCREEN=face" & goto launch
+          :launch
+          start "" "%~dp0kgui_sim.exe" "%SCREEN%" --device --bezel
+          goto end
+          :end
+          endlocal
           EOF
-
+          cat > kds-kgui-windows/README.txt <<'EOF'
+          Kds - Kode Dot : previsualisation native Windows
+          =================================================
+          Demarrage : double-cliquez sur Kds-Start.bat.
+          Choisissez un ecran dans le menu. L'option 6 ouvre le cadran.
+          
+          Commandes dans la fenetre du simulateur :
+            Fleches haut/bas/gauche/droite : naviguer dans le focus
+            Entree : bouton TOP (valider)
+            Echap : bouton BOT (retour)
+            Souris : toucher l'ecran et appuyer sur les boutons du boitier
+          
+          Ecrans fournis : face, launcher, loading, settings, touch_test.
+          L'interface est le vrai KGUI KodeOS compile avec LVGL et SDL2.
+          Ce mode natif ne simule pas le processeur ESP32-P4 ni tous les
+          services firmware (capteurs, Active Objects, animations Kody).
+          Les applications firmware ESP32 ne sont pas executables directement
+          dans ce mode ; elles demandent un portage natif de leur code source.
+          Internet n'est pas necessaire apres extraction de l'archive.
+          =================================================
+          EOF
       - name: Upload Windows KGUI preview
         uses: actions/upload-artifact@v4
         with:

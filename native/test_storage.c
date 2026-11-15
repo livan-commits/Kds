@@ -1,6 +1,7 @@
 #include "kds_storage.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 int main(void) {
  char path[4096], buf[64]={0};

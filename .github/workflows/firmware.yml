@@ -164,6 +164,13 @@ jobs:
           # FreeRTOS declarations so those headers parse without pretending
           # that an RTOS is running.
           mkdir -p kds-freertos-headers/freertos
+          # Minimal Kconfig values for parsing KQP headers in the visual-only build.
+          # Scheduler and factory-test AOs are not started by the native KGUI simulator.
+          cat > kds-freertos-headers/sdkconfig.h <<'EOF'
+          #pragma once
+          #define CONFIG_KODE_SCHEDULER 0
+          #define CONFIG_KODE_TEST_DOT 0
+          EOF
           cat > kds-freertos-headers/freertos/FreeRTOS.h <<'EOF'
           #pragma once
           #include <stdint.h>

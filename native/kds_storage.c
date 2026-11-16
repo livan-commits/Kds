@@ -59,7 +59,7 @@ int kds_storage_path(const char *relative,char *out,size_t cap) {
  if(!ready || !relative || !*relative || !out || !cap) return -1;
  if(relative[0]=='/' || relative[0]=='\\' || (strlen(relative)>1 && relative[1]==':')) return -1;
  const char *p=relative;
- while(*p) { while(*p=='/' || *p=='\\') p++; const char *s=p; while(*p && *p!='/' && *p!='\\') p++; size_t n=(size_t)(p-s); if(n==2 && s[0]=='.' && s[1]=='.') return -1; }
+ while(*p) { while(*p=='/' || *p=='\\') p++; const char *s=p; while(*p && *p!='/' && *p!='\\') p++; size_t n=(size_t)(p-s); if((n==2 && s[0]=='.' && s[1]=='.') || (n==1 && s[0]=='.') || n==0) return -1; }
  int n=snprintf(out,cap,"%s%c%s",root,KDS_SEP,relative); if(n<0 || (size_t)n>=cap) return -1;
  for(char *q=out;*q;q++) if(*q=='/' || *q=='\\') *q=KDS_SEP;
  return 0;
@@ -67,4 +67,21 @@ int kds_storage_path(const char *relative,char *out,size_t cap) {
 FILE *kds_storage_open(const char *relative,const char *mode) {
  char path[PATH_MAX]; if(!mode || kds_storage_path(relative,path,sizeof path)!=0) return NULL;
  return fopen(path,mode);
+}
+
+/* Create every component without ever changing the process working directory. */
+int kds_storage_mkdirs(const char *relative) {
+ char path[PATH_MAX];
+ if (kds_storage_path(relative, path, sizeof path) != 0) return -1;
+ size_t root_len = strlen(root);
+ for (char *p = path + root_len + 1; ; ++p) {
+  if (*p == KDS_SEP || *p == '\\0') {
+   char saved = *p;
+   *p = '\\0';
+   if (make_dir(path) != 0) { *p = saved; return -1; }
+   *p = saved;
+   if (saved == '\\0') break;
+  }
+ }
+ return 0;
 }

@@ -171,15 +171,57 @@ jobs:
           main = Path("upstream/KodeOS/sdk/components/kui/sim/main.c")
           ms = main.read_text()
           ms = ms.replace('#include "keys.h"', '#include "keys.h"' + chr(10) + '#include "kds_storage.h"' + chr(10) + '#include "kgui_screens.h"' + chr(10) + '#include <time.h>')
-          # Drive the official KGUI face clock from the host computer's local time.
+          # Expose a narrow setter for the face's existing date label.
+          face = Path("upstream/KodeOS/components/kgui/screens/kgui_screen_face.c")
+          fs = face.read_text()
+          date_anchor = """void kgui_screen_face_date(bool shown)
+{
+    s_date_wanted = shown;
+    if ( NULL != s_date_line )
+    {
+        lv_obj_set_hidden(s_date_line, (!shown) || s_bare || s_arc_up || s_knock_up);
+    }
+}
+"""
+          date_setter = date_anchor + """
+void kgui_screen_face_date_text(const char *text)
+{
+    if ((NULL != s_date_line) && (NULL != text)) {
+        lv_label_set_text(s_date_line, text);
+        kgui_screen_face_date_place();
+    }
+}
+"""
+          if date_anchor not in fs:
+              raise SystemExit("Could not locate the official KGUI face date function")
+          fs = fs.replace(date_anchor, date_setter, 1)
+          face.write_text(fs)
+          header = Path("upstream/KodeOS/components/kgui/screens/kgui_screens.h")
+          hs = header.read_text()
+          header_anchor = "void kgui_screen_face_date(bool shown);"
+          if header_anchor not in hs:
+              raise SystemExit("Could not locate the official KGUI face date declaration")
+          hs = hs.replace(header_anchor, header_anchor + chr(10) + "void kgui_screen_face_date_text(const char *text);", 1)
+          header.write_text(hs)
+          # Drive the official KGUI face clock and date from host local time.
           clock_code = '''
           static void kds_host_clock_tick(lv_timer_t *timer)
           {
+              static const char *const weekdays[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+              static const char *const months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+              char date_text[24];
               (void)timer;
               time_t now = time(NULL);
               struct tm *local = localtime(&now);
               if (local != NULL) {
                   kgui_screen_face_time(local->tm_hour, local->tm_min, false, false);
+                  if ((local->tm_wday >= 0) && (local->tm_wday < 7) &&
+                      (local->tm_mon >= 0) && (local->tm_mon < 12)) {
+                      (void)snprintf(date_text, sizeof(date_text), "%s %d %s",
+                                     weekdays[local->tm_wday], local->tm_mday,
+                                     months[local->tm_mon]);
+                      kgui_screen_face_date_text(date_text);
+                  }
               }
           }
           '''

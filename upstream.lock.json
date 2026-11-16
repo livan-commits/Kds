@@ -14,5 +14,15 @@
     "height": 502,
     "format": "RGB565"
   },
-  "chips": ["ESP32-P4", "ESP32-C5"]
+  "chips": [
+    "ESP32-P4",
+    "ESP32-C5"
+  ],
+  "kode-sim": {
+    "repository": "https://github.com/kodediy/kode-sim.git",
+    "version": "0.2.0",
+    "commit": "e9404e4e0a9834044fb1ada36976a090c25cb70d",
+    "license": "GPL-3.0-or-later",
+    "engine": "Espressif esp-emu 1.0.0"
+  }
 }

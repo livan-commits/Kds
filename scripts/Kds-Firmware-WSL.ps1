@@ -1,5 +1,5 @@
 param(
-  [ValidateSet("setup","run","install-app")]
+  [ValidateSet("setup","run","install-app","install-kody-kart")]
   [string]$Action = "run",
   [string]$Distribution = "Ubuntu",
   [string]$Project = ""

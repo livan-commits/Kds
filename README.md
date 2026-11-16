@@ -37,4 +37,4 @@ Les sources amont restent identifiables, avec leurs commits et licences. Les ada
 
 ## État du développement
 
-Les workflows CI construisent séparément les firmwares amont P4/C5 et le KGUI natif Windows. Ces validations ne signifient pas encore que KodeOS complet démarre sous Windows. Consulter [la feuille de route](docs/ROADMAP.md), [l'architecture](docs/ARCHITECTURE.md) et [le plan de portage natif](docs/NATIVE-PORT.md).
+Les workflows CI construisent séparément les firmwares amont P4/C5 et le KGUI natif Windows. Ces validations ne signifient pas encore que KodeOS complet démarre sous Windows. Le mode firmware s'appuie désormais en priorité sur l'étude d'intégration du simulateur officiel [kode-sim](https://github.com/kodediy/kode-sim). Consulter [la feuille de route](docs/ROADMAP.md), [la stratégie kode-sim](docs/EMULATOR-STRATEGY.md), [l'architecture](docs/ARCHITECTURE.md) et [le plan de portage natif](docs/NATIVE-PORT.md).

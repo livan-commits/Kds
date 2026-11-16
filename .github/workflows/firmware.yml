@@ -4,12 +4,20 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/kds-firmware-wsl.sh"
+      - "scripts/Kds-Firmware-WSL.ps1"
+      - "docs/APP-TESTING.md"
+      - "README.md"
+      - ".github/workflows/firmware.yml"
 
 permissions:
   contents: write
 
 jobs:
   firmware:
+    if: github.event_name != 'pull_request'
     name: Build official KodeOS P4 and C5 firmware
     runs-on: ubuntu-latest
     steps:
@@ -109,6 +117,7 @@ jobs:
           retention-days: 14
 
   windows-kgui:
+    if: github.event_name != 'pull_request'
     name: Build the real KodeOS KGUI on Windows
     runs-on: windows-latest
     steps:
@@ -482,6 +491,7 @@ jobs:
           retention-days: 14
 
   publish-windows-download:
+    if: github.event_name != 'pull_request'
     name: Publish direct Windows download
     needs: windows-kgui
     runs-on: ubuntu-latest
@@ -508,6 +518,7 @@ jobs:
           echo "Direct download: https://github.com/${GITHUB_REPOSITORY}/releases/download/windows-preview/kds-windows-preview.zip"
 
   kode-sim-linux:
+    if: github.event_name != 'pull_request'
     name: Validate official kode-sim engine on Linux
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -561,6 +572,7 @@ jobs:
           tools/host_tests.sh
 
   kode-sim-kodeos-compat:
+    if: github.event_name != 'pull_request'
     name: Check KodeOS compatibility patch for kode-sim
     runs-on: ubuntu-latest
     steps:
@@ -592,6 +604,7 @@ jobs:
           echo "Pinned KodeOS accepts the kode-sim no-radio compatibility patch."
 
   kode-sim-kodeos-build-linux:
+    if: github.event_name != 'pull_request'
     name: Build KodeOS through official kode-sim on Linux
     needs: kode-sim-kodeos-compat
     runs-on: ubuntu-latest
@@ -664,6 +677,7 @@ jobs:
           retention-days: 14
 
   kode-sim-kodeos-boot-linux:
+    if: github.event_name != 'pull_request'
     name: Boot real KodeOS firmware in esp-emu on Linux
     needs: kode-sim-kodeos-build-linux
     runs-on: ubuntu-latest
@@ -743,3 +757,22 @@ jobs:
             exit 1
           fi
           echo "KodeOS booted in esp-emu and kode-sim served its local page successfully."
+
+  script-validation:
+    name: Validate KEMU-aware app install workflow
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Bash syntax
+        run: bash -n scripts/kds-firmware-wsl.sh
+      - name: Check the KEMU-aware install path
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'install-app <ESP-IDF-project-directory>' scripts/kds-firmware-wsl.sh
+          grep -Fq 'kode-sim" install --mailbox "$project"' scripts/kds-firmware-wsl.sh
+          grep -Fq 'docs/APP-TESTING.md' README.md
+          grep -Fq 'idf.py build' docs/APP-TESTING.md
+          grep -Fq 'install-app' scripts/Kds-Firmware-WSL.ps1
+          echo "KEMU-aware source build/install path is present."

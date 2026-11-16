@@ -303,7 +303,7 @@ jobs:
           set -euo pipefail
           gcc -std=c11 -Wall -Wextra -Werror -I native native/kds_storage.c native/test_storage.c -o kds-storage-test.exe
           ./kds-storage-test.exe
-          test -f "$APPDATA/Kds/SD/kds-storage-test.txt"
+          test -f "$APPDATA/Kds/SD/apps/test-data/kds-storage-test.txt"
 
       - name: Smoke-test real KGUI screen rendering
         shell: msys2 {0}

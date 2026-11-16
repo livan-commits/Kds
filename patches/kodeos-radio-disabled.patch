@@ -1,0 +1,175 @@
+diff --git a/components/kgui/kgui_ao.c b/components/kgui/kgui_ao.c
+index c093ac5..d9b2656 100644
+--- a/components/kgui/kgui_ao.c
++++ b/components/kgui/kgui_ao.c
+@@ -3241,9 +3241,11 @@ static void gui_more_fill(Gui * const me);
+ static void gui_time_fill(Gui * const me);
+ static void gui_time_follow(Gui * const me);
+ static uint32_t gui_time_minute(Gui const * const me, struct tm *out);
++#if CONFIG_KODEOS_BLE
+ static const char *gui_ble_name_shown(Gui const * const me);
+ static void gui_ble_name_send(Gui const * const me);
+ static void gui_ble_name_config(Gui * const me, KodeConfigReqEvt const * const r);
++#endif
+ static bool gui_row_cut(Gui const * const me, int32_t cy, kgui_rail_t const *edge);
+ static void gui_vol_motor(Gui const * const me);
+ static void gui_first_hold_tick(Gui * const me);
+@@ -12065,7 +12067,9 @@ static void gui_keep_gate(Gui * const me)
+         && ((uint8_t)GUI_KEEP_READ_NONE == me->keep_read) )
+     {
+         me->keep_gate_open = true;
++#if CONFIG_KODEOS_RADIO
+         radio_boot_release();
++#endif
+     }
+ }
+ 
+@@ -24595,6 +24599,7 @@ static void gui_os_ask(Gui * const me, const char *why)
+         gui_os_failed(me, "no memory for the answer");
+         return;
+     }
++#if CONFIG_KODEOS_NET
+     if ( net_http_ask(&me->super, false, GUI_OS_SERVICE, NULL, 0U, NULL,
+                       me->os->answer, KGUI_OSREL_ANSWER_MAX) == KODE_OK )
+     {
+@@ -24605,6 +24610,10 @@ static void gui_os_ask(Gui * const me, const char *why)
+     {
+         gui_os_failed(me, "AO_Net did not take the question");
+     }
++#else
++    (void)why;
++    gui_os_failed(me, "built without the network");
++#endif
+ }
+ 
+ /**
+@@ -24723,6 +24732,7 @@ static void gui_more_value(Gui const * const me, uint8_t which, char *out,
+             break;
+         }
+         case GUI_MORE_WIFI: {
++#if CONFIG_KODEOS_WIFI
+             const char * const w = gui_radio_words(me, me->wifi_on, me->wifi_linked,
+                                                    me->wifi_reconnecting);
+             const char *say = me->wifi_ssid;
+@@ -24732,10 +24742,17 @@ static void gui_more_value(Gui const * const me, uint8_t which, char *out,
+                 say = w;
+             }
+             (void)snprintf(out, cap, "%s", say);
++#else
++            (void)snprintf(out, cap, "%s", "Off");   /* built without Wi-Fi */
++#endif
+             break;
+         }
+         case GUI_MORE_BLE: {
++#if CONFIG_KODEOS_BLE
+             (void)snprintf(out, cap, "%s", gui_radio_words(me, me->ble_on, false, false));
++#else
++            (void)snprintf(out, cap, "%s", "Off");   /* built without Bluetooth */
++#endif
+             break;
+         }
+         case GUI_MORE_TIME: {
+@@ -33389,7 +33406,9 @@ static QState Gui_initial(Gui * const me, void const * const par)
+     {
+         kgui_assets_start();
+     }
++#if CONFIG_KODEOS_RADIO
+     radio_boot_hold();
++#endif
+     /* The name chosen for Bluetooth: the radio keeps it for its adverts. It
+      * is sent once every owner has its queue (GUI_TICK_SIG): this AO starts
+      * in kode_init()'s early row, before AO_Radio, and a post to an AO with
+@@ -33670,11 +33689,13 @@ static QState Gui_running(Gui * const me, QEvt const * const e)
+                 me->settings_owed = false;
+                 gui_settings_ask();
+             }
++#if CONFIG_KODEOS_BLE
+             if ( me->ble_name_owed && kode_up() )
+             {
+                 me->ble_name_owed = false;
+                 gui_ble_name_send(me);
+             }
++#endif
+             /* The long step of the whole system, which is why AO_Gui sits
+              * near the bottom of the priority list, with only AO_Net below
+              * it: a repaint spends most of its time blocked inside LVGL
+diff --git a/components/kgui/kgui_assets.c b/components/kgui/kgui_assets.c
+index b58415e..0dde167 100644
+--- a/components/kgui/kgui_assets.c
++++ b/components/kgui/kgui_assets.c
+@@ -471,6 +471,8 @@ static void say_source(bool state)
+ 
+ /* ---- The gatherer: one file, read whole, into one PSRAM block --------------- */
+ 
++static void gather_fail(kode_status_t rc);
++
+ /**
+  * @brief Start reading a whole file from a path or a URL.
+  * @param net   true for a URL (AO_Net's stream), false for a path.
+@@ -492,7 +494,11 @@ static void gather(bool net, const char *where, uint32_t limit)
+     s_a.g_probing = false;
+     if ( net )
+     {
++#if CONFIG_KODEOS_NET
+         net_stream_open_request(s_a.g_where, s_a.ao);
++#else
++        gather_fail(KODE_DENIED);          /* built without the network: no URL opens */
++#endif
+     }
+     else
+     {
+@@ -503,11 +509,13 @@ static void gather(bool net, const char *where, uint32_t limit)
+ /** @brief Close the gather's file or stream; buffers on loan go back with it. */
+ static void gather_close(void)
+ {
++#if CONFIG_KODEOS_NET
+     if ( s_a.g_net )
+     {
+         net_stream_close_request();
+     }
+     else
++#endif
+     {
+         storage_close_request();
+     }
+@@ -569,11 +577,13 @@ static void gather_opened(StorageOpenRspEvt const * const r)
+         gather_fail(KODE_NO_RESOURCES);
+         return;
+     }
++#if CONFIG_KODEOS_NET
+     if ( s_a.g_net )
+     {
+         net_stream_read_request();
+     }
+     else
++#endif
+     {
+         storage_read_request();
+     }
+@@ -624,11 +634,13 @@ static void gather_data(StorageDataEvt const * const d)
+ {
+     const uint8_t *src = NULL;
+ 
++#if CONFIG_KODEOS_NET
+     if ( s_a.g_net )
+     {
+         src = net_stream_buf(d->idx);
+     }
+     else
++#endif
+     {
+         src = storage_buf(d->idx);
+     }
+@@ -655,10 +667,12 @@ static void gather_data(StorageDataEvt const * const d)
+         s_a.op = OP_NONE;
+         post_result(KODE_OK, true);
+     }
++#if CONFIG_KODEOS_NET
+     else if ( s_a.g_net )
+     {
+         net_stream_return(d->idx);         /* a return IS the next read */
+     }
++#endif
+     else
+     {
+         storage_next_request(d->idx);

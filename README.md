@@ -6,7 +6,7 @@ Kds est un projet indépendant construit à partir des sources publiques officie
 
 ### KDS Native — priorité Windows puis Android
 
-Recompile directement sur l'ordinateur les composants graphiques portables de KodeOS : le vrai KGUI, LVGL et les composants KUI compatibles. Le rendu utilise SDL2 sur Windows. Un KDS-HAL remplacera progressivement les services matériels ESP-IDF par des services natifs explicites.
+Recompile directement sur l'ordinateur les composants graphiques portables de KodeOS : le vrai KGUI, LVGL et les composants KUI compatibles. Le rendu utilise SDL2 sur Windows. Sur l’écran du cadran, l’heure et la date sont synchronisées avec l’horloge locale de l’ordinateur. Un KDS-HAL remplacera progressivement les services matériels ESP-IDF par des services natifs explicites.
 
 Ce mode n'émule pas un processeur ESP32. Il vise la meilleure fluidité possible pour naviguer dans l'interface et tester les composants/apps dont le code source peut être porté et recompilé.
 
@@ -15,6 +15,8 @@ Ce mode n'émule pas un processeur ESP32. Il vise la meilleure fluidité possibl
 Objectif séparé : exécuter les véritables images ESP32-P4 et ESP32-C5 dans un runtime d'émulation compatible. La compilation des images firmware est une étape préalable, pas une preuve qu'elles démarrent dans l'émulateur. Les périphériques et les échanges P4↔C5 devront être validés séparément.
 
 Les applications compilées pour ESP32 ne fonctionnent pas directement dans KDS Native : elles nécessitent leur code source et un portage/recompilation.
+
+Le paquet Windows se lance avec `Kds-Start.bat`, puis propose cinq écrans : cadran, lanceur, chargement, paramètres et test tactile. La navigation dans le menu du simulateur utilise les flèches, Entrée (TOP), Échap (BOT) et la souris.
 
 ## Sources officielles et traçabilité
 

@@ -606,3 +606,84 @@ jobs:
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
+
+  kode-sim-kodeos-boot-linux:
+    name: Boot real KodeOS firmware in esp-emu on Linux
+    needs: kode-sim-kodeos-build-linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Kds
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned official kode-sim
+        uses: actions/checkout@v4
+        with:
+          repository: kodediy/kode-sim
+          ref: e9404e4e0a9834044fb1ada36976a090c25cb70d
+          path: upstream/kode-sim
+          fetch-depth: 1
+
+      - name: Download KodeOS firmware built by kode-sim
+        uses: actions/download-artifact@v4
+        with:
+          name: kds-kodeos-kode-sim-linux-build
+          path: artifacts
+
+      - name: Install microSD image tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mtools
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build the official kode-sim runner
+        working-directory: upstream/kode-sim
+        run: cargo build --release -p kode-sim
+
+      - name: Boot KodeOS in esp-emu and verify the local simulator page
+        shell: bash
+        run: |
+          set -euo pipefail
+          export KODE_SIM_TOOLS="$RUNNER_TEMP/kode-sim-tools"
+          export KODE_SIM_CACHE="$RUNNER_TEMP/kode-sim-cache"
+          mkdir -p "$KODE_SIM_TOOLS" "$KODE_SIM_CACHE"
+          test -s artifacts/kodeos-kode-sim-merged.bin
+          test -s artifacts/kodeos-kode-sim.elf
+          log="$RUNNER_TEMP/kode-sim-boot.log"
+          upstream/kode-sim/target/release/kode-sim run \
+            --firmware "$GITHUB_WORKSPACE/artifacts/kodeos-kode-sim-merged.bin" \
+            --elf "$GITHUB_WORKSPACE/artifacts/kodeos-kode-sim.elf" \
+            --no-open --exit-on-crash --port 8765 >"$log" 2>&1 &
+          sim_pid=$!
+          cleanup() {
+            kill -INT "$sim_pid" 2>/dev/null || true
+            wait "$sim_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          ready=0
+          for attempt in $(seq 1 120); do
+            if grep -q "the Kode Dot is at http://127.0.0.1:8765" "$log"; then
+              ready=1
+              break
+            fi
+            if grep -qi "firmware crashed" "$log"; then
+              cat "$log"
+              exit 1
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat "$log"
+            echo "KodeOS did not reach the kode-sim web-ready state within 120 seconds."
+            exit 1
+          fi
+          curl --retry 5 --retry-connrefused --retry-delay 1 -fsS \
+            http://127.0.0.1:8765/ -o "$RUNNER_TEMP/kode-sim-page.html"
+          test -s "$RUNNER_TEMP/kode-sim-page.html"
+          if grep -qi "firmware crashed" "$log"; then
+            cat "$log"
+            exit 1
+          fi
+          echo "KodeOS booted in esp-emu and kode-sim served its local page successfully."

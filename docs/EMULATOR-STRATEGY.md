@@ -23,6 +23,12 @@ D'après le README et le guide officiels :
 
 Ces limites doivent rester visibles dans l'interface et dans les rapports de test.
 
+## Préparation spécifique de KodeOS
+
+Le lancement de KodeOS par `kode-sim` demande une compilation sans radio, car le C5 n'est pas encore émulé. Deux points amont sont nécessaires : le SDK épinglé par KodeOS contient déjà la correction du drain DSI (`PANEL_READ_DRAIN_MAX`) du [PR kode-sdk#122](https://github.com/kodediy/kode-sdk/pull/122), qui évite le blocage de l'AO écran sans hôte DSI ; en revanche, le [problème KodeOS#67](https://github.com/kodediy/KodeOS/issues/67) signale des appels radio/réseau non protégés quand `CONFIG_KODEOS_RADIO=n`. Kds conserve le patch de compatibilité proposé dans cette issue sous `patches/kodeos-radio-disabled.patch`. Ce patch est une adaptation locale de test, pas encore une correction officielle fusionnée dans KodeOS.
+
+Un job CI vérifie maintenant que le patch s'applique proprement à la révision KodeOS épinglée et que le correctif DSI est présent dans le SDK. Cette vérification ne remplace pas encore une compilation de KodeOS avec radio désactivée.
+
 ## Compatibilité Windows : état réel
 
 Le dépôt `kode-sim` est annoncé comme conçu pour macOS Apple Silicon. Ses tests hôtes passent sur Linux. Kds épingle désormais la version 0.2.0 et ajoute un job CI Ubuntu qui exécute les suites hôtes officielles (formatage, clippy, Rust, page Web et tests C de `kemu`). Cela valide le moteur côté hôte sous Linux, mais ne prouve pas encore le build ni le démarrage d'un firmware sous Linux : le guide amont indique que cette étape n'a pas encore été essayée par ses auteurs.
@@ -48,13 +54,14 @@ Espressif publie également un build WebAssembly d'esp-emu, exécutable dans un 
 ## Ordre d'intégration
 
 1. Épingler kode-sim et esp-emu à des versions/commits connus ; consigner licences et dépendances. (fait : `upstream.lock.json`)
-2. Faire tourner les suites hôtes officielles sous Ubuntu CI. (job ajouté ; validation en cours)
-3. Construire un exemple officiel dans Ubuntu WSL2.
-4. Démarrer l'exemple dans esp-emu et vérifier console, fenêtre, boutons et tactile.
-5. Construire KodeOS avec les adaptations amont demandées par kode-sim et vérifier son démarrage réel.
-6. Vérifier écran 410×502, microSD persistante, audio, capteurs, USB et comportement des applications, fonctionnalité par fonctionnalité.
-7. Relier le backend WSL2 au lanceur Kds Windows, avec arrêt propre et conservation des journaux.
-8. Étudier le port WebAssembly seulement après validation du moteur de référence.
+2. Faire tourner les suites hôtes officielles sous Ubuntu CI. (réussi)
+3. Vérifier la compatibilité KodeOS sans radio et la correction DSI sur les sources épinglées. (job CI ajouté ; validation en cours)
+4. Construire un exemple officiel dans Ubuntu WSL2.
+5. Démarrer l'exemple dans esp-emu et vérifier console, fenêtre, boutons et tactile.
+6. Construire KodeOS avec les adaptations amont demandées par kode-sim et vérifier son démarrage réel.
+7. Vérifier écran 410×502, microSD persistante, audio, capteurs, USB et comportement des applications, fonctionnalité par fonctionnalité.
+8. Relier le backend WSL2 au lanceur Kds Windows, avec arrêt propre et conservation des journaux.
+9. Étudier le port WebAssembly seulement après validation du moteur de référence.
 
 ## Place du moteur KGUI natif
 

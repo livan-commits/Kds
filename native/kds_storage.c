@@ -75,12 +75,12 @@ int kds_storage_mkdirs(const char *relative) {
  if (kds_storage_path(relative, path, sizeof path) != 0) return -1;
  size_t root_len = strlen(root);
  for (char *p = path + root_len + 1; ; ++p) {
-  if (*p == KDS_SEP || *p == '\\0') {
+  if (*p == KDS_SEP || *p == '\0') {
    char saved = *p;
-   *p = '\\0';
+   *p = '\0';
    if (make_dir(path) != 0) { *p = saved; return -1; }
    *p = saved;
-   if (saved == '\\0') break;
+   if (saved == '\0') break;
   }
  }
  return 0;

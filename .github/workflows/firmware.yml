@@ -771,6 +771,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -Fq 'install-app <ESP-IDF-project-directory>' scripts/kds-firmware-wsl.sh
+          grep -Fq 'install-kody-kart' scripts/kds-firmware-wsl.sh
+          grep -Fq 'KODY_KART_COMMIT="4ee77321442035c35da4dd3994e5cdef055564db"' scripts/kds-firmware-wsl.sh
           grep -Fq 'kode-sim" install --mailbox "$project"' scripts/kds-firmware-wsl.sh
           grep -Fq 'docs/APP-TESTING.md' README.md
           grep -Fq 'idf.py build' docs/APP-TESTING.md

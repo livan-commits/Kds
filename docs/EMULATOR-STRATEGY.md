@@ -1,41 +1,72 @@
-# Choix du moteur et modes d'exécution
+# Choix du moteur et intégration de kode-sim
 
-## Pourquoi deux modes complémentaires
+## Décision d'architecture
 
-Le SDK officiel contient déjà `components/kgui/sim`. Ce programme compile les écrans KGUI réels de KodeOS avec LVGL et SDL2, dans une fenêtre native ou en capture PNG. Il sert à obtenir une interface native fluide et à valider les écrans et interactions UI.
+Kds conserve deux moteurs complémentaires :
 
-Ce mode n'exécute pas le firmware ESP32-P4, les Active Objects ni les pilotes réels. Il doit donc être présenté comme **KGUI natif**, pas comme une émulation complète de KodeOS.
+- **KDS Native** : interface KGUI/LVGL officielle compilée pour Windows, légère et fluide. C'est le mode de navigation rapide et le banc de test graphique.
+- **KDS Firmware** : exécution du vrai firmware KodeOS et des applications kode-sdk dans ESP32-P4 émulé, avec les composants de carte modélisés par le projet officiel `kode-sim`.
 
-Le mode **KodeOS firmware** doit charger l'image flash produite par le vrai build P4 dans ESP-EMU. ESP-EMU 1.0.0 annonce les CPU P4 (double cœur) et C5, la mémoire/PSRAM, le firmware ESP-IDF et les périphériques virtuels par co-simulation. Les composants spécifiques du Kode Dot devront être modélisés et testés.
+Le dépôt officiel à réutiliser est [kodediy/kode-sim](https://github.com/kodediy/kode-sim), version 0.2.0, commit de référence initial `e9404e4e0a9834044fb1ada36976a090c25cb70d` (2026-11-16). Il dépend d'[Espressif esp-emulator](https://github.com/espressif/esp-emulator), version `1.0.0`.
 
-## Cible Windows
+**Ne pas réécrire les Active Objects, les pilotes ou les modèles de puces déjà fournis par kode-sim.** Toute intégration doit conserver la traçabilité des sources et leurs licences GPL-3.0-or-later.
 
-Les assets publiés d'ESP-EMU 1.0.0 contiennent le moteur natif Linux x86_64 / Linux ARM64 / macOS ARM64 ainsi que le runtime WebAssembly ; il n'y a pas de binaire moteur Windows x64 dans cette publication. Le premier chemin Windows complet sera donc le runtime WASM officiel intégré dans une application locale WebView2, avec tous les fichiers inclus et sans CDN.
+## Ce que kode-sim apporte déjà
 
-Le mode KGUI natif est compilé directement pour Windows avec SDL2. Il donnera une référence de fluidité et permettra de distinguer un problème d'interface d'un problème de vitesse d'émulation CPU.
+D'après le README et le guide officiels :
 
-## Règles de performance
+- Le firmware tourne réellement sur un ESP32-P4 émulé : FreeRTOS, QP/C, Active Objects, kode-sdk et pilotes restent dans le firmware.
+- Les puces de la carte sont modélisées côté Rust et reliées au P4 par la co-simulation : expander/boutons, contrôleur tactile, LED, haptique, chargeur, jauge, codec audio, IMU et magnétomètre.
+- L'écran MIPI-DSI 410×502, la microSD, le C5/radio et l'USB sont encore partiellement fournis par `kemu`, une couche de remplacement liée au firmware.
+- La carte SD est une image persistante sur le disque hôte ; FATFS, le pilote SD Kode et AO_Storage du firmware réel travaillent au-dessus du contrôleur simulé.
+- Les applications doivent aujourd'hui être compilées depuis leurs sources avec `kode-sim build/run`. Les binaires catalogue compilés pour la carte ne sont pas encore tous compatibles avec le simulateur.
 
-- CPU d'émulation isolé du thread de rendu.
-- Transfert de framebuffer en blocs et uniquement lorsque la séquence/zone modifiée change.
-- Aucun polling mémoire à haute fréquence si l'image n'a pas changé.
-- Utiliser les symboles ELF exportés pour trouver les buffers, pas des adresses codées en dur.
-- Éviter la conversion de pixels si le format source peut être consommé directement.
-- Mesurer MIPS/temps émulé, FPS, latence entrée-écran, CPU hôte et mémoire.
-- Garder une horloge invitée fidèle ; ne pas accélérer le temps système pour faire croire à de meilleures performances.
+Ces limites doivent rester visibles dans l'interface et dans les rapports de test.
 
-## Critères d'acceptation
+## Compatibilité Windows : état réel
 
-### KGUI natif
-- Compilation Windows réussie à partir des sources amont épinglées.
-- Les écrans face, launcher, loading, settings et touch_test s'affichent.
-- Les entrées clavier/souris et la navigation sont documentées.
-- Le paquet contient les DLL nécessaires et démarre hors ligne.
+Le dépôt `kode-sim` est annoncé comme conçu pour macOS Apple Silicon. Ses tests hôtes passent sur Linux, mais son guide indique que le build et l'exécution firmware sous Linux n'ont pas encore été essayés par les auteurs.
 
-### KodeOS firmware
-- Le vrai firmware P4 démarre dans ESP-EMU.
-- La sortie console et les exceptions sont conservées dans les logs.
-- Les périphériques requis au démarrage répondent correctement.
-- Le framebuffer correspond au vrai KGUI et se met à jour sans blocage.
-- Les boutons et le tactile injectés modifient le vrai état du firmware.
-- Le C5 est considéré opérationnel seulement si son firmware démarre et que le lien P4↔C5 est fonctionnel.
+Il n'existe pas de binaire natif Windows x64 publié pour `esp-emu 1.0.0`. Les assets de cette version sont Linux x86_64/ARM64, macOS Apple Silicon et WebAssembly. Le code hôte actuel de kode-sim utilise aussi des interfaces Unix, les signaux POSIX, `flock`, `bash` et `rsync` : un build Windows natif direct demanderait un portage significatif, pas seulement un changement de compilateur.
+
+### Chemin recommandé à court terme : moteur Linux sous WSL2
+
+Pour valider le vrai firmware sur un PC Windows sans réécrire le moteur :
+
+1. Garder KDS Native comme interface rapide et solution de secours.
+2. Préparer un environnement Ubuntu WSL2 avec ESP-IDF v6.1, Rust, les outils requis et le binaire Linux x86_64 d'esp-emu 1.0.0.
+3. Construire kode-sim depuis le commit épinglé ci-dessus, puis tester d'abord un exemple officiel kode-sdk, ensuite KodeOS.
+4. Lancer kode-sim sans ouverture automatique de fenêtre et ouvrir son interface Web locale depuis Windows (Edge/WebView2) via le port localhost.
+5. Ajouter un lanceur Windows qui vérifie WSL2, démarre le backend, attend le serveur local, puis ouvre l'interface. Ne pas annoncer un paquet autonome tant que l'installation WSL/IDF n'est pas reproductible.
+
+WSL2 est une voie d'intégration à tester, pas une compatibilité Windows déjà démontrée. Le premier jalon est un test reproductible de build et de boot sous Ubuntu WSL2.
+
+### Piste ultérieure : WebAssembly dans WebView2
+
+Espressif publie également un build WebAssembly d'esp-emu, exécutable dans un navigateur. Cela ne rend pas kode-sim directement compatible WebAssembly : son orchestrateur Rust lance aujourd'hui un processus externe, utilise des sockets, des signaux et des outils système. Il faudrait porter la co-simulation des puces, le transport UART, les contrôles de flash et le cycle de vie du firmware vers une architecture navigateur/worker. Cette piste est intéressante pour une distribution sans WSL, mais elle est plus importante qu'un simple empaquetage WebView2.
+
+## Ordre d'intégration
+
+1. Épingler kode-sim et esp-emu à des versions/commits connus ; consigner licences et dépendances.
+2. Faire tourner les suites hôtes de kode-sim et construire un exemple officiel dans Ubuntu WSL2.
+3. Démarrer l'exemple dans esp-emu et vérifier console, fenêtre, boutons et tactile.
+4. Construire KodeOS avec les adaptations amont demandées par kode-sim et vérifier son démarrage réel.
+5. Vérifier écran 410×502, microSD persistante, audio, capteurs, USB et comportement des applications, fonctionnalité par fonctionnalité.
+6. Relier le backend WSL2 au lanceur Kds Windows, avec arrêt propre et conservation des journaux.
+7. Étudier le port WebAssembly seulement après validation du moteur de référence.
+
+## Place du moteur KGUI natif
+
+Le SDK officiel contient `components/kgui/sim`, qui compile les écrans KGUI réels avec LVGL et SDL2. Il reste utile pour une navigation très réactive, des captures et des tests d'interface. Il n'exécute pas le firmware ESP32, les Active Objects ni les pilotes réels.
+
+Ne pas supprimer ce mode : il constitue une solution rapide lorsque l'utilisateur privilégie la fluidité, tandis que KDS Firmware sert à tester la compatibilité réelle du firmware.
+
+## Critères d'acceptation KDS Firmware
+
+- Le vrai firmware P4 démarre dans esp-emu ; la compilation seule ne suffit pas.
+- Les logs de boot, les erreurs et les exceptions sont conservés.
+- L'écran montre le vrai framebuffer KGUI et reçoit les entrées.
+- La carte SD est utilisée par le vrai chemin FATFS/Kode/AO_Storage et ses données persistent.
+- Le C5 n'est déclaré opérationnel que si son firmware et le lien P4↔C5 sont réellement fonctionnels.
+- Chaque périphérique est classé comme émulé, remplacé par `kemu`, absent ou non testé.
+- Le temps réel, le FPS, la latence entrée-écran, le CPU et la mémoire sont mesurés sur la machine hôte.

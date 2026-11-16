@@ -360,7 +360,7 @@ jobs:
           $form.BackColor = [Drawing.Color]::FromArgb(22,24,30)
           $form.ForeColor = [Drawing.Color]::White
           $header = New-Object Windows.Forms.Label
-          $header.Text = "Kds | Kode Dot - Simulateur natif KGUI"
+          $header.Text = "Kds | Kode Dot - Choisissez le mode"
           $header.Font = New-Object Drawing.Font("Segoe UI",16,[Drawing.FontStyle]::Bold)
           $header.TextAlign = "MiddleCenter"
           $header.Location = New-Object Drawing.Point(20,15)
@@ -412,7 +412,7 @@ jobs:
           Kds - Kode Dot : previsualisation native Windows
           =================================================
           Demarrage : double-cliquez sur Kds-Start.bat.
-          Choisissez un ecran dans le menu. L'option 6 ouvre le cadran.
+          Choisissez un ecran natif (options 1 a 5), ou le mode firmware
           
           Commandes dans la fenetre du simulateur :
             Fleches haut/bas/gauche/droite : naviguer dans le focus

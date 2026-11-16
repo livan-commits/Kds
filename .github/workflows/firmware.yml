@@ -173,7 +173,7 @@ jobs:
           ms = ms.replace('#include "keys.h"', '#include "keys.h"' + chr(10) + '#include "kds_storage.h"' + chr(10) + '#include "kgui_screens.h"' + chr(10) + '#include <time.h>')
           # Expose a narrow setter for the face's existing date label.
           face = Path("upstream/KodeOS/components/kgui/screens/kgui_screen_face.c")
-          fs = face.read_text()
+          fs = face.read_text(encoding="utf-8")
           date_anchor = ("void kgui_screen_face_date(bool shown)" + chr(10)
                          + "{" + chr(10)
                          + "    s_date_wanted = shown;" + chr(10)
@@ -193,14 +193,14 @@ jobs:
           if date_anchor not in fs:
               raise SystemExit("Could not locate the official KGUI face date function")
           fs = fs.replace(date_anchor, date_setter, 1)
-          face.write_text(fs)
+          face.write_text(fs, encoding="utf-8")
           header = Path("upstream/KodeOS/components/kgui/screens/kgui_screens.h")
-          hs = header.read_text()
+          hs = header.read_text(encoding="utf-8")
           header_anchor = "void kgui_screen_face_date(bool shown);"
           if header_anchor not in hs:
               raise SystemExit("Could not locate the official KGUI face date declaration")
           hs = hs.replace(header_anchor, header_anchor + chr(10) + "void kgui_screen_face_date_text(const char *text);", 1)
-          header.write_text(hs)
+          header.write_text(hs, encoding="utf-8")
           # Drive the official KGUI face clock and date from host local time.
           clock_code = '''
           static void kds_host_clock_tick(lv_timer_t *timer)

@@ -7,11 +7,15 @@ ROOT="${KDS_FIRMWARE_ROOT:-$HOME/.local/share/kds-firmware}"
 IDF_DIR="$ROOT/esp-idf"
 SIM_DIR="$ROOT/kode-sim"
 OS_DIR="$ROOT/KodeOS"
+KODY_KART_DIR="$ROOT/apps/kody-kart"
 IDF_VERSION="v6.1"
 KODE_SIM_COMMIT="e9404e4e0a9834044fb1ada36976a090c25cb70d"
 KODEOS_COMMIT="9bcfdb71b763ee7b5c14106358643ea611fc97db"
+KODY_KART_COMMIT="4ee77321442035c35da4dd3994e5cdef055564db"
 
-usage() { echo "Usage: $0 setup | run"; }
+usage() {
+  echo "Usage: $0 setup | run | install-app <ESP-IDF-project-directory> | install-kody-kart"
+}
 install_system_deps() {
   sudo apt-get update
   sudo apt-get install -y git curl wget flex bison gperf python3 python3-pip python3-venv \
@@ -43,7 +47,7 @@ setup() {
   echo "Pinned sources prepared in $ROOT."
   echo "Start the simulator with: $0 run"
 }
-run_sim() {
+prepare_runtime() {
   for path in "$IDF_DIR/export.sh" "$SIM_DIR/Cargo.toml" "$OS_DIR/CMakeLists.txt" "$ROOT/kodeos-radio-disabled.patch"; do
     test -e "$path" || { echo "Missing $path; run '$0 setup' first." >&2; exit 2; }
   done
@@ -59,10 +63,44 @@ run_sim() {
   fi
   export KODE_SIM_CACHE="$ROOT/cache"
   export KODE_SIM_TOOLS="$ROOT/tools"
+}
+run_sim() {
+  prepare_runtime
   exec "$SIM_DIR/target/release/kode-sim" run "$OS_DIR"
+}
+install_app() {
+  local project="${1:-}"
+  if [ -z "$project" ]; then
+    echo "An ESP-IDF app source directory is required." >&2
+    usage >&2
+    exit 2
+  fi
+  if [ ! -d "$project" ] || [ ! -f "$project/CMakeLists.txt" ]; then
+    echo "Not an ESP-IDF project directory: $project" >&2
+    exit 2
+  fi
+  prepare_runtime
+  echo "Building the app with the pinned kode-sim KEMU bridge, then installing it through the mailbox."
+  "$SIM_DIR/target/release/kode-sim" install --mailbox "$project"
+}
+install_kody_kart() {
+  mkdir -p "$ROOT/apps"
+  if [ ! -d "$KODY_KART_DIR/.git" ]; then
+    git clone https://github.com/kodediy/kode-app-kody_kart.git "$KODY_KART_DIR"
+  fi
+  git -C "$KODY_KART_DIR" fetch --depth 1 origin "$KODY_KART_COMMIT"
+  git -C "$KODY_KART_DIR" checkout --detach "$KODY_KART_COMMIT"
+  echo "Kody Kart source pinned to $KODY_KART_COMMIT."
+  echo "The official SDK dependency is fetched over SSH; your WSL GitHub SSH key must have access to kodediy/kode-sdk."
+  install_app "$KODY_KART_DIR"
 }
 case "${1:-}" in
   setup) setup ;;
   run) run_sim ;;
+  install-app)
+    shift
+    install_app "${1:-}"
+    ;;
+  install-kody-kart) install_kody_kart ;;
   *) usage; exit 2 ;;
 esac

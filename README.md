@@ -33,4 +33,8 @@ Les sources amont restent identifiables, avec leurs commits et licences. Les ada
 4. Valider chaque étape par compilation, démarrage, journaux et scénarios reproductibles.
 5. Ne déclarer la compatibilité Windows firmware qu'après validation WSL2 sur cette plateforme.
 
-Pour essayer le backend expérimental depuis Windows, suivre le [guide WSL2](docs/WSL2-SETUP.md) et utiliser `scripts/Kds-Firmware-WSL.ps1`. Ce script n'a pas encore été validé sur une machine Windows/WSL2.\n\nConsulter [la feuille de route](docs/ROADMAP.md), [la stratégie kode-sim](docs/EMULATOR-STRATEGY.md), [l'architecture](docs/ARCHITECTURE.md) et [le plan de portage natif](docs/NATIVE-PORT.md).
+Pour essayer le backend expérimental depuis Windows, suivre le [guide WSL2](docs/WSL2-SETUP.md) et utiliser `scripts/Kds-Firmware-WSL.ps1`. Ce script n'a pas encore été validé sur une machine Windows/WSL2.
+
+Pour compiler et installer une application avec le pont d'affichage KEMU, suivre le [guide de test des applications](docs/APP-TESTING.md).
+
+Consulter [la feuille de route](docs/ROADMAP.md), [la stratégie kode-sim](docs/EMULATOR-STRATEGY.md), [l'architecture](docs/ARCHITECTURE.md) et [le plan de portage natif](docs/NATIVE-PORT.md).

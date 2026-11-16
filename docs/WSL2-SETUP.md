@@ -17,7 +17,7 @@ Depuis l'explorateur Windows, ouvrez le dossier du dépôt Kds et exécutez Powe
 powershell -ExecutionPolicy Bypass -File .\scripts\Kds-Firmware-WSL.ps1 -Action setup
 ```
 
-Le script installe les dépendances Linux, ESP-IDF v6.1 pour ESP32-P4, puis récupère les commits officiels épinglés de KodeOS et kode-sim. Il copie également le patch de compatibilité KodeOS requis par le mode sans radio C5.
+Le script installe les dépendances Linux, le toolchain Rust/Cargo nécessaire à kode-sim, ESP-IDF v6.1 pour ESP32-P4, puis récupère les commits officiels épinglés de KodeOS et kode-sim. Il copie également le patch de compatibilité KodeOS requis par le mode sans radio C5.
 
 La première installation et la première compilation peuvent prendre un certain temps. Ubuntu demandera le mot de passe sudo.
 

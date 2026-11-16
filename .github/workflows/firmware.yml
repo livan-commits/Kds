@@ -450,3 +450,56 @@ jobs:
           fi
           gh release upload windows-preview kds-windows-preview.zip --clobber
           echo "Direct download: https://github.com/${GITHUB_REPOSITORY}/releases/download/windows-preview/kds-windows-preview.zip"
+
+  kode-sim-linux:
+    name: Validate official kode-sim engine on Linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Kds
+        uses: actions/checkout@v4
+
+      - name: Checkout official kode-sim at the pinned revision
+        uses: actions/checkout@v4
+        with:
+          repository: kodediy/kode-sim
+          ref: e9404e4e0a9834044fb1ada36976a090c25cb70d
+          path: upstream/kode-sim
+          fetch-depth: 1
+
+      - name: Verify official engine pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C upstream/kode-sim rev-parse HEAD)" = "e9404e4e0a9834044fb1ada36976a090c25cb70d"
+
+      - name: Install Linux host dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential cmake mtools pkg-config
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Set up Python and Node
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify formatting and lint
+        working-directory: upstream/kode-sim
+        run: |
+          cargo fmt --all --check
+          cargo clippy --all-targets -- -D warnings
+
+      - name: Run official kode-sim host test suite
+        working-directory: upstream/kode-sim
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -q -r tests/requirements.txt
+          tools/host_tests.sh

@@ -534,3 +534,75 @@ jobs:
           git -C upstream/KodeOS apply "$GITHUB_WORKSPACE/patches/kodeos-radio-disabled.patch"
           git -C upstream/KodeOS diff --check
           echo "Pinned KodeOS accepts the kode-sim no-radio compatibility patch."
+
+  kode-sim-kodeos-build-linux:
+    name: Build KodeOS through official kode-sim on Linux
+    needs: kode-sim-kodeos-compat
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Kds
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned official kode-sim
+        uses: actions/checkout@v4
+        with:
+          repository: kodediy/kode-sim
+          ref: e9404e4e0a9834044fb1ada36976a090c25cb70d
+          path: upstream/kode-sim
+          fetch-depth: 1
+
+      - name: Checkout pinned official KodeOS and SDK
+        uses: actions/checkout@v4
+        with:
+          repository: kodediy/KodeOS
+          ref: 9bcfdb71b763ee7b5c14106358643ea611fc97db
+          path: upstream/KodeOS
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Apply the tracked no-radio compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C upstream/KodeOS apply "$GITHUB_WORKSPACE/patches/kodeos-radio-disabled.patch"
+          git -C upstream/KodeOS diff --check
+
+      - name: Build the real KodeOS image with kode-sim and ESP-IDF 6.1
+        uses: espressif/esp-idf-ci-action@e6f5c74232b1ccd4c97ed641f1e48553853f1fd5
+        with:
+          path: .
+          esp_idf_version: v6.1
+          target: esp32p4
+          command: |
+            set -euo pipefail
+            apt-get update -qq
+            apt-get install -y -qq rsync
+            curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal
+            source "$HOME/.cargo/env"
+            cargo build --manifest-path upstream/kode-sim/Cargo.toml --release -p kode-sim
+            export KODE_SIM_CACHE="$PWD/.cache/kode-sim"
+            upstream/kode-sim/target/release/kode-sim build upstream/KodeOS --json
+            test -n "$(find "$KODE_SIM_CACHE" -type f -name merged-binary.bin -size +0c -print -quit)"
+            test -n "$(find "$KODE_SIM_CACHE" -type f -name '*.elf' -size +0c -print -quit)"
+
+      - name: Collect kode-sim KodeOS firmware outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          merged="$(find .cache/kode-sim -type f -name merged-binary.bin -size +0c -print -quit)"
+          elf="$(find .cache/kode-sim -type f -name '*.elf' -size +0c -print -quit)"
+          test -n "$merged"
+          test -n "$elf"
+          cp "$merged" artifacts/kodeos-kode-sim-merged.bin
+          cp "$elf" artifacts/kodeos-kode-sim.elf
+          sha256sum artifacts/* > artifacts/SHA256SUMS
+
+      - name: Upload firmware built for kode-sim
+        uses: actions/upload-artifact@v4
+        with:
+          name: kds-kodeos-kode-sim-linux-build
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14

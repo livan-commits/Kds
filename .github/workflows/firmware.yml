@@ -437,6 +437,42 @@ jobs:
           Internet n'est pas necessaire apres extraction de l'archive.
           =================================================
           EOF
+      - name: Validate Windows launcher and WSL PowerShell scripts
+        shell: pwsh
+        run: |
+          $files = @(
+            "scripts/Kds-Firmware-WSL.ps1",
+            "kds-kgui-windows/Kds-Start.ps1"
+          )
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Join-Path $PWD $file), [ref]$tokens, [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error $_.Message }
+              throw "PowerShell syntax validation failed: $file"
+            }
+            Write-Host "PowerShell syntax OK: $file"
+          }
+          foreach ($file in @(
+            "kds-kgui-windows/scripts/Kds-Firmware-WSL.ps1",
+            "kds-kgui-windows/scripts/kds-firmware-wsl.sh",
+            "kds-kgui-windows/patches/kodeos-radio-disabled.patch"
+          )) {
+            if (-not (Test-Path -LiteralPath $file)) {
+              throw "Windows package is missing: $file"
+            }
+          }
+
+      - name: Validate WSL Bash script syntax
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          bash -n scripts/kds-firmware-wsl.sh
+          bash -n kds-kgui-windows/scripts/kds-firmware-wsl.sh
+          echo "WSL Bash syntax OK."
       - name: Upload Windows KGUI preview
         uses: actions/upload-artifact@v4
         with:

@@ -174,24 +174,22 @@ jobs:
           # Expose a narrow setter for the face's existing date label.
           face = Path("upstream/KodeOS/components/kgui/screens/kgui_screen_face.c")
           fs = face.read_text()
-          date_anchor = """void kgui_screen_face_date(bool shown)
-{
-    s_date_wanted = shown;
-    if ( NULL != s_date_line )
-    {
-        lv_obj_set_hidden(s_date_line, (!shown) || s_bare || s_arc_up || s_knock_up);
-    }
-}
-"""
-          date_setter = date_anchor + """
-void kgui_screen_face_date_text(const char *text)
-{
-    if ((NULL != s_date_line) && (NULL != text)) {
-        lv_label_set_text(s_date_line, text);
-        kgui_screen_face_date_place();
-    }
-}
-"""
+          date_anchor = ("void kgui_screen_face_date(bool shown)" + chr(10)
+                         + "{" + chr(10)
+                         + "    s_date_wanted = shown;" + chr(10)
+                         + "    if ( NULL != s_date_line )" + chr(10)
+                         + "    {" + chr(10)
+                         + "        lv_obj_set_hidden(s_date_line, (!shown) || s_bare || s_arc_up || s_knock_up);" + chr(10)
+                         + "    }" + chr(10)
+                         + "}" + chr(10))
+          date_setter = date_anchor + (chr(10)
+                         + "void kgui_screen_face_date_text(const char *text)" + chr(10)
+                         + "{" + chr(10)
+                         + "    if ((NULL != s_date_line) && (NULL != text)) {" + chr(10)
+                         + "        lv_label_set_text(s_date_line, text);" + chr(10)
+                         + "        kgui_screen_face_date_place();" + chr(10)
+                         + "    }" + chr(10)
+                         + "}" + chr(10))
           if date_anchor not in fs:
               raise SystemExit("Could not locate the official KGUI face date function")
           fs = fs.replace(date_anchor, date_setter, 1)

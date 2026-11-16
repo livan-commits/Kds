@@ -11,7 +11,9 @@ IDF_VERSION="v6.1"
 KODE_SIM_COMMIT="e9404e4e0a9834044fb1ada36976a090c25cb70d"
 KODEOS_COMMIT="9bcfdb71b763ee7b5c14106358643ea611fc97db"
 
-usage() { echo "Usage: $0 setup | run"; }
+usage() {
+  echo "Usage: $0 setup | run | install-app <ESP-IDF-project-directory>"
+}
 install_system_deps() {
   sudo apt-get update
   sudo apt-get install -y git curl wget flex bison gperf python3 python3-pip python3-venv \
@@ -43,7 +45,7 @@ setup() {
   echo "Pinned sources prepared in $ROOT."
   echo "Start the simulator with: $0 run"
 }
-run_sim() {
+prepare_runtime() {
   for path in "$IDF_DIR/export.sh" "$SIM_DIR/Cargo.toml" "$OS_DIR/CMakeLists.txt" "$ROOT/kodeos-radio-disabled.patch"; do
     test -e "$path" || { echo "Missing $path; run '$0 setup' first." >&2; exit 2; }
   done
@@ -59,10 +61,32 @@ run_sim() {
   fi
   export KODE_SIM_CACHE="$ROOT/cache"
   export KODE_SIM_TOOLS="$ROOT/tools"
+}
+run_sim() {
+  prepare_runtime
   exec "$SIM_DIR/target/release/kode-sim" run "$OS_DIR"
+}
+install_app() {
+  local project="${1:-}"
+  if [ -z "$project" ]; then
+    echo "An ESP-IDF app source directory is required." >&2
+    usage >&2
+    exit 2
+  fi
+  if [ ! -d "$project" ] || [ ! -f "$project/CMakeLists.txt" ]; then
+    echo "Not an ESP-IDF project directory: $project" >&2
+    exit 2
+  fi
+  prepare_runtime
+  echo "Building the app with the pinned kode-sim KEMU bridge, then installing it through the mailbox."
+  "$SIM_DIR/target/release/kode-sim" install --mailbox "$project"
 }
 case "${1:-}" in
   setup) setup ;;
   run) run_sim ;;
+  install-app)
+    shift
+    install_app "${1:-}"
+    ;;
   *) usage; exit 2 ;;
 esac

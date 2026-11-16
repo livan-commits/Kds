@@ -17,6 +17,12 @@ install_system_deps() {
   sudo apt-get install -y git curl wget flex bison gperf python3 python3-pip python3-venv \
     cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 pkg-config \
     build-essential mtools rsync
+  # kode-sim is a Rust workspace; install the upstream Rust toolchain explicitly.
+  if ! command -v cargo >/dev/null 2>&1; then
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+  fi
+  if [ -f "$HOME/.cargo/env" ]; then source "$HOME/.cargo/env"; fi
+  command -v cargo >/dev/null 2>&1 || { echo "Rust/Cargo installation failed." >&2; exit 2; }
 }
 setup() {
   mkdir -p "$ROOT"
@@ -45,6 +51,8 @@ run_sim() {
     git -C "$OS_DIR" apply --check "$ROOT/kodeos-radio-disabled.patch"
     git -C "$OS_DIR" apply "$ROOT/kodeos-radio-disabled.patch"
   fi
+  if [ -f "$HOME/.cargo/env" ]; then source "$HOME/.cargo/env"; fi
+  command -v cargo >/dev/null 2>&1 || { echo "Cargo is missing; rerun setup." >&2; exit 2; }
   source "$IDF_DIR/export.sh"
   if [ ! -x "$SIM_DIR/target/release/kode-sim" ]; then
     cargo build --release --manifest-path "$SIM_DIR/Cargo.toml" -p kode-sim

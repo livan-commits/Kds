@@ -10,7 +10,13 @@ La commande `kode-sim install` accepte le **dossier source ESP-IDF**. Elle const
 
 ## Procédure depuis Windows / PowerShell
 
-En supposant que le backend Kds est déjà lancé et que l'application se trouve dans `/home/pc/kd_full_test` :
+En supposant que le backend Kds est déjà lancé et que l'application se trouve dans `/home/pc/kd_full_test`, utiliser le lanceur PowerShell :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Kds-Firmware-WSL.ps1 -Action install-app -Project /home/pc/kd_full_test
+```
+
+Ou appeler directement le script Bash depuis PowerShell :
 
 ```powershell
 wsl -d Ubuntu -- bash /home/pc/Kds/scripts/kds-firmware-wsl.sh install-app /home/pc/kd_full_test

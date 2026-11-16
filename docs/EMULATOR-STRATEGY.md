@@ -25,7 +25,7 @@ Ces limites doivent rester visibles dans l'interface et dans les rapports de tes
 
 ## Compatibilité Windows : état réel
 
-Le dépôt `kode-sim` est annoncé comme conçu pour macOS Apple Silicon. Ses tests hôtes passent sur Linux, mais son guide indique que le build et l'exécution firmware sous Linux n'ont pas encore été essayés par les auteurs.
+Le dépôt `kode-sim` est annoncé comme conçu pour macOS Apple Silicon. Ses tests hôtes passent sur Linux. Kds épingle désormais la version 0.2.0 et ajoute un job CI Ubuntu qui exécute les suites hôtes officielles (formatage, clippy, Rust, page Web et tests C de `kemu`). Cela valide le moteur côté hôte sous Linux, mais ne prouve pas encore le build ni le démarrage d'un firmware sous Linux : le guide amont indique que cette étape n'a pas encore été essayée par ses auteurs.
 
 Il n'existe pas de binaire natif Windows x64 publié pour `esp-emu 1.0.0`. Les assets de cette version sont Linux x86_64/ARM64, macOS Apple Silicon et WebAssembly. Le code hôte actuel de kode-sim utilise aussi des interfaces Unix, les signaux POSIX, `flock`, `bash` et `rsync` : un build Windows natif direct demanderait un portage significatif, pas seulement un changement de compilateur.
 
@@ -47,13 +47,14 @@ Espressif publie également un build WebAssembly d'esp-emu, exécutable dans un 
 
 ## Ordre d'intégration
 
-1. Épingler kode-sim et esp-emu à des versions/commits connus ; consigner licences et dépendances.
-2. Faire tourner les suites hôtes de kode-sim et construire un exemple officiel dans Ubuntu WSL2.
-3. Démarrer l'exemple dans esp-emu et vérifier console, fenêtre, boutons et tactile.
-4. Construire KodeOS avec les adaptations amont demandées par kode-sim et vérifier son démarrage réel.
-5. Vérifier écran 410×502, microSD persistante, audio, capteurs, USB et comportement des applications, fonctionnalité par fonctionnalité.
-6. Relier le backend WSL2 au lanceur Kds Windows, avec arrêt propre et conservation des journaux.
-7. Étudier le port WebAssembly seulement après validation du moteur de référence.
+1. Épingler kode-sim et esp-emu à des versions/commits connus ; consigner licences et dépendances. (fait : `upstream.lock.json`)
+2. Faire tourner les suites hôtes officielles sous Ubuntu CI. (job ajouté ; validation en cours)
+3. Construire un exemple officiel dans Ubuntu WSL2.
+4. Démarrer l'exemple dans esp-emu et vérifier console, fenêtre, boutons et tactile.
+5. Construire KodeOS avec les adaptations amont demandées par kode-sim et vérifier son démarrage réel.
+6. Vérifier écran 410×502, microSD persistante, audio, capteurs, USB et comportement des applications, fonctionnalité par fonctionnalité.
+7. Relier le backend WSL2 au lanceur Kds Windows, avec arrêt propre et conservation des journaux.
+8. Étudier le port WebAssembly seulement après validation du moteur de référence.
 
 ## Place du moteur KGUI natif
 

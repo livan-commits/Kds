@@ -1,8 +1,8 @@
 # Feuille de route Kds
 
-Kds garde deux moteurs : **KDS Native** pour une interface KGUI fluide et **KDS Firmware** pour exécuter le vrai firmware KodeOS. La découverte du dépôt officiel `kodediy/kode-sim` fait de sa réutilisation la priorité pour le mode firmware ; nous ne devons pas réimplémenter ses pilotes, ses Active Objects ou ses modèles de puces.
+Kds conserve deux moteurs : **KDS Native** pour une interface KGUI fluide et **KDS Firmware** pour exécuter le vrai firmware KodeOS. Le dépôt officiel `kodediy/kode-sim` est maintenant la base du mode firmware.
 
-## Phase 1 — Base graphique Windows (disponible, à consolider)
+## Phase 1 — Base graphique Windows
 
 - [x] Compiler le véritable KGUI officiel pour Windows avec SDL2.
 - [x] Fournir les écrans face, launcher, loading, settings et touch_test.
@@ -10,16 +10,17 @@ Kds garde deux moteurs : **KDS Native** pour une interface KGUI fluide et **KDS 
 - [x] Paquet Windows avec SDL2 et lanceur.
 - [ ] Mesurer FPS, latence entrée-écran, CPU et mémoire sur une machine Windows réelle.
 
-## Phase 2 — Réutiliser kode-sim (priorité technique)
+## Phase 2 — Moteur firmware officiel kode-sim
 
-- [x] Identifier le dépôt officiel et son architecture : P4 émulé + co-simulation des puces + `kemu`.
-- [x] Épingler le commit d'étude `e9404e4e0a9834044fb1ada36976a090c25cb70d` et esp-emu `1.0.0`.
-- [ ] Préparer Ubuntu WSL2 avec ESP-IDF v6.1, Rust, rsync et mtools.
-- [ ] Exécuter les tests hôtes de kode-sim dans WSL2.
-- [ ] Compiler et démarrer un exemple officiel kode-sdk dans esp-emu.
-- [ ] Compiler KodeOS et vérifier son vrai démarrage dans le simulateur.
+- [x] Identifier et épingler kode-sim et esp-emu.
+- [x] Exécuter les tests hôtes officiels de kode-sim sous Ubuntu CI.
+- [x] Construire KodeOS avec kode-sim et ESP-IDF 6.1 sous Linux CI.
+- [x] Démarrer le vrai firmware KodeOS P4 dans esp-emu sous Linux CI.
+- [x] Vérifier que kode-sim annonce son serveur Web prêt et que la page HTTP répond.
+- [ ] Inspecter visuellement l'affichage et tester les entrées.
+- [ ] Reproduire le build et le démarrage dans Ubuntu WSL2.
 - [ ] Vérifier le framebuffer 410×502, boutons, tactile, microSD, audio et capteurs.
-- [ ] Relier le serveur local de kode-sim au lanceur Kds Windows.
+- [ ] Tester les applications compilées depuis leurs sources.
 - [ ] Mesurer les performances et les limites du firmware émulé.
 
 ## Phase 3 — Distribution Windows unifiée
@@ -28,7 +29,7 @@ Kds garde deux moteurs : **KDS Native** pour une interface KGUI fluide et **KDS 
 - [ ] Installation et contrôle de l'environnement WSL2 reproductibles.
 - [ ] Ouverture de l'interface du backend dans Edge/WebView2 via localhost.
 - [ ] Démarrage/arrêt propre du backend et conservation des données SD/flash.
-- [ ] Documentation claire des prérequis, des fonctions émulées et des limites.
+- [ ] Documentation claire des prérequis, fonctions émulées et limites.
 
 ## Phase 4 — Réduction des dépendances
 
@@ -42,4 +43,4 @@ Kds garde deux moteurs : **KDS Native** pour une interface KGUI fluide et **KDS 
 - [ ] Étudier un backend firmware Android seulement si esp-emu/WSL ou une cible native équivalente le permet.
 - [ ] Vérifier le C5 et les fonctions Bluetooth, NFC, RFID et IR au fur et à mesure du support amont.
 
-Voir [la stratégie d'intégration kode-sim](EMULATOR-STRATEGY.md), [le plan de portage natif](NATIVE-PORT.md) et [l'architecture](ARCHITECTURE.md).
+Le démarrage Linux CI est documenté dans [la stratégie kode-sim](EMULATOR-STRATEGY.md). Voir aussi [le plan de portage natif](NATIVE-PORT.md) et [l'architecture](ARCHITECTURE.md).

@@ -503,3 +503,34 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install -q -r tests/requirements.txt
           tools/host_tests.sh
+
+  kode-sim-kodeos-compat:
+    name: Check KodeOS compatibility patch for kode-sim
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Kds
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned official KodeOS and SDK
+        uses: actions/checkout@v4
+        with:
+          repository: kodediy/KodeOS
+          ref: 9bcfdb71b763ee7b5c14106358643ea611fc97db
+          path: upstream/KodeOS
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Verify the display no-DSI fix is in the pinned SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'PANEL_READ_DRAIN_MAX' upstream/KodeOS/sdk/components/kdrv/display/src/kdrv_display.c
+
+      - name: Check and apply the no-radio compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C upstream/KodeOS apply --check "$GITHUB_WORKSPACE/patches/kodeos-radio-disabled.patch"
+          git -C upstream/KodeOS apply "$GITHUB_WORKSPACE/patches/kodeos-radio-disabled.patch"
+          git -C upstream/KodeOS diff --check
+          echo "Pinned KodeOS accepts the kode-sim no-radio compatibility patch."

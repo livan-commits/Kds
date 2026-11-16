@@ -170,7 +170,21 @@ jobs:
           # Wire the host SD directory into the actual simulator startup.
           main = Path("upstream/KodeOS/sdk/components/kui/sim/main.c")
           ms = main.read_text()
-          ms = ms.replace('#include "keys.h"', '#include "keys.h"' + chr(10) + '#include "kds_storage.h"')
+          ms = ms.replace('#include "keys.h"', '#include "keys.h"' + chr(10) + '#include "kds_storage.h"' + chr(10) + '#include "kgui_screens.h"' + chr(10) + '#include <time.h>')
+          # Drive the official KGUI face clock from the host computer's local time.
+          clock_code = '''
+          static void kds_host_clock_tick(lv_timer_t *timer)
+          {
+              (void)timer;
+              time_t now = time(NULL);
+              struct tm *local = localtime(&now);
+              if (local != NULL) {
+                  kgui_screen_face_time(local->tm_hour, local->tm_min, false, false);
+              }
+          }
+          '''
+          ms = ms.replace('/** The most --set options one run takes. */', clock_code + chr(10) + '/** The most --set options one run takes. */')
+          ms = ms.replace('    lv_screen_load(scr);', '    lv_screen_load(scr);' + chr(10) + '    if (strcmp(o.screen, "face") == 0) {' + chr(10) + '        (void)lv_timer_create(kds_host_clock_tick, 1000U, NULL);' + chr(10) + '    }')
           boot = '    if (kds_storage_init() == 0) {' + chr(10)
           boot += '        fprintf(stderr, "Kds SD: %s' + chr(92) + 'n", kds_storage_root());' + chr(10)
           boot += '    } else {' + chr(10)

@@ -8,5 +8,7 @@ int kds_storage_init(void);
 const char *kds_storage_root(void);
 /* Resolve a relative path safely; rejects absolute paths and ".." traversal. */
 int kds_storage_path(const char *relative, char *out, size_t out_size);
+/* Create a directory tree on the virtual SD card (parents included). */
+int kds_storage_mkdirs(const char *relative);
 FILE *kds_storage_open(const char *relative, const char *mode);
 #endif
